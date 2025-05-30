@@ -1,77 +1,74 @@
 import React, { useState } from "react";
-import { Collapse, Navbar, NavbarToggler, NavbarBrand, Nav, NavItem, NavLink, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from "reactstrap";
-import { Link } from "react-router-dom";
+import { Navbar, Nav, NavDropdown, Container, Button } from "react-bootstrap";
+import { Link, useHistory } from "react-router-dom";
 import { connect } from "react-redux";
 import { LogoutSuccessAction } from "./../redux/actions";
 import { FaCartPlus } from "react-icons/fa";
 
-const logOutUser = () => {
-  localStorage.clear();
-  LogoutSuccessAction();
-};
-
 const Header = props => {
   const [isOpen, setIsOpen] = useState(false);
+  const history = useHistory();
 
   const toggle = () => setIsOpen(!isOpen);
 
+  const logOutUser = () => {
+    localStorage.clear();
+    props.LogoutSuccessAction(); // Dispatch action via props
+    history.push("/"); // Redirect to home after logout
+  };
+
   return (
-    <div>
-      <Navbar style={{ height: "100px" }} className="warnaHeader" dark expand="md">
-        <NavbarBrand> IMAX </NavbarBrand>
-        <NavbarToggler onClick={toggle} />
-        <Collapse isOpen={isOpen} navbar>
-          <Nav className="ml-5" navbar>
-            <NavItem>
-              <NavLink className="warnalink" href="/">
-                Home
-              </NavLink>
-            </NavItem>
-            <NavItem>
-              {props.role === "admin" ? (
-                <div className="d-flex mr-3 salah">
-                  <NavLink href={"/manageAdmin"}>manageAdmin</NavLink>
-                  <NavLink href={"/manageStudio"}>Manage Studio</NavLink>
-                </div>
-              ) : null}
-            </NavItem>
-            <NavItem>
-              {props.authLogin ? null : (
-                <NavLink>
-                  <Link className="warnalink" to={"/login"}>
-                    Login
-                  </Link>
-                </NavLink>
-              )}
-            </NavItem>
-            {props.AuthLog === "" ? <NavItem></NavItem> : null}
-            {props.AuthLog === "" ? null : <NavItem className="mt-2 user d-flex">Selamat Datang {props.AuthLog}</NavItem>}
-          </Nav>
-          <Nav>
-            {props.AuthLog === "" ? null : (
-              <NavItem className="logout d-flex">
-                <NavLink>
-                  {props.role === "user" ? (
-                    <Link to={"/cart"}>
-                      <div style={{ color: "white" }}>
-                        <FaCartPlus style={{ color: "white", fontSize: "20px" }} />
-                        {props.notif}
-                      </div>
-                    </Link>
-                  ) : null}
-                </NavLink>
-                <NavLink href="/" onClick={() => logOutUser()} className="btn btn-dark">
-                  Logout
-                </NavLink>
-                <NavLink className="warnalink" href="/gantipassword">
-                  Ganti Password
-                </NavLink>
-              </NavItem>
+    <Navbar bg="dark" variant="dark" expand="md" style={{ minHeight: "80px" }} className="p-3">
+      <Container fluid>
+        <Navbar.Brand as={Link} to="/">IMAX</Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" onClick={toggle} />
+        <Navbar.Collapse id="basic-navbar-nav" isOpen={isOpen}>
+          <Nav className="me-auto">
+            <Nav.Link as={Link} to="/">
+              Home
+            </Nav.Link>
+            {props.role === "admin" && (
+              <>
+                <Nav.Link as={Link} to="/manageAdmin">
+                  Manage Admin
+                </Nav.Link>
+                <Nav.Link as={Link} to="/manageStudio">
+                  Manage Studio
+                </Nav.Link>
+              </>
             )}
           </Nav>
-        </Collapse>
-      </Navbar>
-    </div>
+          <Nav>
+            {props.AuthLog ? (
+              <>
+                <Navbar.Text className="me-3 text-white">
+                  Selamat Datang, {props.AuthLog}
+                </Navbar.Text>
+                {props.role === "user" && (
+                  <Nav.Link as={Link} to="/cart" className="text-white me-3">
+                    <FaCartPlus style={{ fontSize: "20px" }} />
+                    {props.notif > 0 && <span className="badge bg-danger ms-1">{props.notif}</span>}
+                  </Nav.Link>
+                )}
+                <NavDropdown title="Account" id="basic-nav-dropdown" align="end">
+                  <NavDropdown.Item as={Link} to="/gantipassword">
+                    Ganti Password
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={logOutUser}>
+                    Logout
+                  </NavDropdown.Item>
+                </NavDropdown>
+              </>
+            ) : (
+              <Nav.Link as={Link} to="/login">
+                Login
+              </Nav.Link>
+            )}
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
 };
 
@@ -79,7 +76,7 @@ const MapstateToprops = state => {
   return {
     AuthLog: state.Auth.username,
     role: state.Auth.role,
-    authLogin: state.Auth.login,
+    authLogin: state.Auth.login, // Kept for compatibility, though AuthLog is primary check now
     notif: state.Auth.notif
   };
 };

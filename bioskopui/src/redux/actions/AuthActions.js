@@ -26,7 +26,7 @@ export const Loginthunk = (username, password) => {
     dispatch({ type: "LOGIN_LOADING" });
     Axios.get(`${APIURL}users?username=${username}&password=${password}`)
       .then(res => {
-        console.log(res.data);
+        // console.log(res.data);
         if (res.data.length) {
           window.location.reload();
           localStorage.setItem("fakhran", res.data[0].id);
@@ -36,7 +36,7 @@ export const Loginthunk = (username, password) => {
         }
       })
       .catch(err => {
-        console.log(err);
+        // console.log(err);
         dispatch({ type: "LOGIN_ERROR", payload: "server error" });
       });
   };

@@ -1,12 +1,10 @@
 import React, { Component } from "react";
-import { Table, TableBody, TableHead, TableCell, TableRow } from "@material-ui/core";
+import { Table, Modal, Button, Form, Container, Row, Col, Spinner, Image, Badge } from "react-bootstrap"; // React-Bootstrap imports
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
-import { Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import Fade from "react-reveal/Fade";
+import Fade from "react-reveal/Fade"; // react-reveal is not part of this refactor, kept as is
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { Spinner } from "reactstrap";
 import { connect } from "react-redux";
 
 const Myswal = withReactContent(Swal);
@@ -17,131 +15,125 @@ class ManageAdmin extends Component {
     modaladd: false,
     modaledit: false,
     indexedit: 0,
-    iddelete: -1,
-    jadwal: [12, 14, 16, 18, 20, 22],
-    datastudio: []
-  };
-
-  onUpdateDataClick = () => {
-    var jadwaltemplate = this.state.jadwal;
-    var jadwal = [];
-    var id = this.state.dataFilm[this.state.indexedit].id;
-    // console.log(this.refs.jadwal0);
-    for (var i = 0; i < jadwaltemplate.length; i++) {
-      if (this.refs[`editjadwal ${i}`].checked) {
-        jadwal.push(jadwaltemplate[i]);
-      }
-    }
-    var iniref = this.refs;
-    var title = iniref.edittitle.value;
-    var image = iniref.editimage.value;
-    var sinopsis = iniref.editsynopsys.value;
-    var sutradara = iniref.editsutradara.value;
-    var genre = iniref.editgenre.value;
-    var durasi = iniref.editdurasi.value;
-    var produksi = iniref.editproduksi.value;
-    var trailer = iniref.edittrailer.value;
-    var studioId = iniref.studio.value;
-
-    var data = {
-      title: title,
-      image: image,
-      synopsys: sinopsis,
-      sutradara: sutradara,
-      genre: genre,
-      durasi: durasi,
-      jadwal: jadwal,
-      produksi: produksi,
-      trailer,
-      studioId
-    };
-
-    if (title === "" || image === "" || sinopsis === "" || genre === "" || jadwal === "" || produksi === "") {
-      Myswal.fire("Failed", "Data harus diisi semua", "error");
-    } else {
-      Axios.patch(`${APIURL}movies/${id}`, data)
-        .then(res => {
-          Axios.get(`${APIURL}movies`).then(res => {
-            this.setState({ dataFilm: res.data });
-          });
-        })
-        .catch(err => {
-          console.log(err);
-        });
-      this.setState({ modaladd: false });
-      Myswal.fire("Berhasil", "Data berhasil dimasukkan", "success");
-    }
-  };
-
-  onSaveDataClick = () => {
-    var jadwaltemplate = [12, 14, 16, 18, 20];
-    var jadwal = [];
-    // console.log(this.refs.jadwal0);
-    for (var i = 0; i < jadwaltemplate.length; i++) {
-      if (this.refs[`jadwal ${i}`].checked) {
-        jadwal.push(jadwaltemplate[i]);
-      }
-    }
-    var iniref = this.refs;
-    var title = iniref.title.value;
-    var image = iniref.image.value;
-    var sinopsis = iniref.synopsys.value;
-    var sutradara = iniref.sutradara.value;
-    var genre = iniref.genre.value;
-    var durasi = iniref.durasi.value;
-    var produksi = iniref.produksi.value;
-    var trailer = iniref.trailer.value;
-    var studioId = iniref.studioId.value;
-
-    var data = {
-      title: title,
-      image: image,
-      synopsys: sinopsis,
-      sutradara: sutradara,
-      genre: genre,
-      durasi: durasi,
-      jadwal: jadwal,
-      produksi: produksi,
-      trailer,
-      studioId
-    };
-
-    if (title === "" || image === "" || sinopsis === "" || genre === "" || jadwal === "" || produksi === "") {
-      Myswal.fire("Failed", "Data harus diisi semua", "error");
-    } else {
-      Myswal.fire("Berhasil", "Data berhasil dimasukkan", "success");
-
-      Axios.post(`${APIURL}movies`, data)
-        .then(res => {
-          Axios.get(`${APIURL}movies`).then(res => {
-            this.setState({ dataFilm: res.data });
-          });
-        })
-        .catch(err => {
-          console.log(err);
-        });
-      this.setState({ modaladd: false });
-    }
+    // iddelete: -1, // Not strictly needed if using index or id directly in delete
+    jadwal: [12, 14, 16, 18, 20, 22], // Default schedule template
+    datastudio: [],
+    loading: true, // Added for initial data load
+    readmoreselected: -1 // For synopsis read more
   };
 
   componentDidMount() {
+    this.fetchData();
+  }
+
+  fetchData = () => {
+    this.setState({ loading: true });
     Axios.get(`${APIURL}movies`)
-      .then(res => {
-        // console.log(res.data)
-        Axios.get(`${APIURL}studios`).then(res1 => {
-          this.setState({
-            dataFilm: res.data,
-            datastudio: res1.data
+      .then(resMovies => {
+        Axios.get(`${APIURL}studios`)
+          .then(resStudios => {
+            this.setState({
+              dataFilm: resMovies.data,
+              datastudio: resStudios.data,
+              loading: false
+            });
+          })
+          .catch(errStudios => {
+            console.log(errStudios);
+            this.setState({ loading: false });
+            Myswal.fire("Error", "Failed to fetch studio data.", "error");
           });
-        });
+      })
+      .catch(errMovies => {
+             // console.log(errStudios);
+         // console.log(errMovies);
+        this.setState({ loading: false });
+        Myswal.fire("Error", "Failed to fetch movie data.", "error");
+      });
+  }
+
+  onUpdateDataClick = () => {
+    const { jadwal: jadwaltemplate, dataFilm, indexedit, datastudio } = this.state;
+    let newJadwal = [];
+    for (let i = 0; i < jadwaltemplate.length; i++) {
+      if (this.refs[`editjadwal${i}`] && this.refs[`editjadwal${i}`].checked) {
+        newJadwal.push(jadwaltemplate[i]);
+      }
+    }
+
+    const currentFilm = dataFilm[indexedit];
+    const updatedData = {
+      title: this.refs.edittitle.value,
+      image: this.refs.editimage.value,
+      synopsys: this.refs.editsynopsys.value,
+      sutradara: this.refs.editsutradara.value,
+      genre: this.refs.editgenre.value,
+      durasi: parseInt(this.refs.editdurasi.value) || 0,
+      jadwal: newJadwal,
+      produksi: this.refs.editproduksi.value,
+      trailer: this.refs.edittrailer.value,
+      studioId: parseInt(this.refs.editstudioId.value) || (datastudio.length > 0 ? datastudio[0].id : "")
+    };
+
+    if (Object.values(updatedData).some(val => val === "" || (Array.isArray(val) && val.length === 0)) || !updatedData.studioId) {
+      return Myswal.fire("Validation Error", "All fields must be filled, and schedule/studio must be selected.", "error");
+    }
+    
+    Axios.patch(`${APIURL}movies/${currentFilm.id}`, updatedData)
+      .then(() => {
+        this.fetchData(); // Refresh data
+        this.setState({ modaledit: false });
+        Myswal.fire("Success!", "Movie data updated successfully.", "success");
       })
       .catch(err => {
         console.log(err);
+        Myswal.fire("Error", "Failed to update movie data.", "error");
       });
-  }
-  deleteMovie = index => {
+  };
+
+  onSaveDataClick = () => {
+    const { jadwal: jadwaltemplate, datastudio } = this.state;
+    let newJadwal = [];
+    // Assuming fixed length for jadwal template for add modal
+    const addJadwalTemplate = [12, 14, 16, 18, 20, 22]; 
+    for (let i = 0; i < addJadwalTemplate.length; i++) {
+      if (this.refs[`addjadwal${i}`] && this.refs[`addjadwal${i}`].checked) {
+        newJadwal.push(addJadwalTemplate[i]);
+      }
+    }
+    
+    const newData = {
+      title: this.refs.addtitle.value,
+      image: this.refs.addimage.value,
+      synopsys: this.refs.addsynopsys.value,
+      sutradara: this.refs.addsutradara.value,
+      genre: this.refs.addgenre.value,
+      durasi: parseInt(this.refs.adddurasi.value) || 0,
+      jadwal: newJadwal,
+      produksi: this.refs.addproduksi.value,
+      trailer: this.refs.addtrailer.value,
+      studioId: parseInt(this.refs.addstudioId.value) || (datastudio.length > 0 ? datastudio[0].id : "")
+    };
+
+    if (Object.values(newData).some(val => val === "" || (Array.isArray(val) && val.length === 0)) || !newData.studioId) {
+      return Myswal.fire("Validation Error", "All fields must be filled, and schedule/studio must be selected.", "error");
+    }
+
+    Axios.post(`${APIURL}movies`, newData)
+      .then(() => {
+        this.fetchData(); // Refresh data
+        this.setState({ modaladd: false });
+        Myswal.fire("Success!", "New movie added successfully.", "success");
+      })
+      .catch(err => {
+        console.log(err);
+        Myswal.fire("Error", "Failed to add new movie.", "error");
+      });
+  };
+
+  deleteMovie = (id, title) => {
     Myswal.fire({
-      title: `Hapus  ${this.state.dataFilm[index].title}`,
+      title: `Delete ${title}?`,
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
@@ -150,242 +142,271 @@ class ManageAdmin extends Component {
       reverseButtons: true
     }).then(result => {
       if (result.value) {
-        const datahapus = this.state.dataFilm;
-        this.setState({ iddelete: datahapus[index].id });
-        Axios.delete(`${APIURL}movies/${this.state.iddelete}`).then(() => {
-          Axios.get(`${APIURL}movies`)
-            .then(res => {
-              this.setState({ dataFilm: res.data });
-            })
-            .catch(err => {
-              console.log(err);
-            });
-        });
-        console.log(this.state.iddelete);
-        // datahapus.splice(index, 1);
-        Myswal.fire("Deleted!", "Your file has been deleted.", "success");
-      } else {
-        Myswal.fire("Cancelled", "", "error");
+        Axios.delete(`${APIURL}movies/${id}`)
+          .then(() => {
+            this.fetchData(); // Refresh data
+            Myswal.fire("Deleted!", `${title} has been deleted.`, "success");
+          })
+          .catch(err => {
+         // console.log(err);
+         // console.log(err);
+             // console.log(err);
+            Myswal.fire("Error", `Failed to delete ${title}.`, "error");
+          });
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        Myswal.fire("Cancelled", `${title} is safe :)`, "info");
       }
     });
   };
 
-  renderMovie = () => {
-    return this.state.dataFilm.map((val, index) => {
-      return (
-        <TableRow key={index}>
-          <TableCell>{index + 1}</TableCell>
-          <TableCell>{val.title}</TableCell>
-          <TableCell>
-            <img src={val.image} alt="gambar" height="200px" />
-          </TableCell>
-
-          {val.synopsys.split("").length <= 50 ? (
-            <TableCell>{val.synopsys}</TableCell>
-          ) : this.state.readmoreselected === index ? (
-            <TableCell>
-              {val.synopsys}
-              <span className="readMore" onClick={() => this.setState({ readmoreselected: -1 })}>
-                Read less
-              </span>
-            </TableCell>
-          ) : (
-            <TableCell>
-              {val.synopsys.split("").filter((val, index) => index <= 50)}
-              <span className="readMore" onClick={() => this.setState({ readmoreselected: index })}>
-                ReadMore
-              </span>
-            </TableCell>
-          )}
-          <TableCell align="center" style={{ width: "60px" }}>
-            {val.jadwal.map((val, index) => {
-              return (
-                <button className="btn btn-dark my-1" style={{ height: "2rem", lineHeight: "14px", cursor: "text" }}>
-                  {val}:00
-                </button>
-              );
-            })}
-          </TableCell>
-          <TableCell>{val.sutradara}</TableCell>
-          <TableCell>{val.genre}</TableCell>
-          <TableCell>{val.durasi}</TableCell>
-          <TableCell>{val.produksi}</TableCell>
-          <TableCell>
-            <button
-              className="btn btn-dark mb-2 mr-3 mt-2"
-              onClick={() => {
-                this.setState({ modaledit: true, indexedit: index });
-              }}
-            >
-              Edit
-            </button>
-            <button onClick={() => this.deleteMovie(index)} className="btn btn-dark">
-              Delete
-            </button>
-          </TableCell>
-        </TableRow>
-      );
-    });
+  renderMovieRows = () => {
+    return this.state.dataFilm.map((val, index) => (
+      <tr key={val.id}>
+        <td>{index + 1}</td>
+        <td>{val.title}</td>
+        <td><Image src={val.image} alt={val.title} style={{ maxHeight: '150px', maxWidth: '100px' }} thumbnail /></td>
+        <td>
+          {val.synopsys.length <= 100 ? val.synopsys : 
+            this.state.readmoreselected === index ? (
+              <>
+                {val.synopsys} <Button variant="link" size="sm" onClick={() => this.setState({ readmoreselected: -1 })}>Read less</Button>
+              </>
+            ) : (
+              <>
+                {val.synopsys.substring(0, 100)}... <Button variant="link" size="sm" onClick={() => this.setState({ readmoreselected: index })}>Read more</Button>
+              </>
+            )
+          }
+        </td>
+        <td className="text-center">
+          {val.jadwal.map(j => <Badge bg="secondary" className="m-1 p-2" key={j}>{j}:00</Badge>)}
+        </td>
+        <td>{val.sutradara}</td>
+        <td>{val.genre}</td>
+        <td>{val.durasi} min</td>
+        <td>{val.produksi}</td>
+        <td>
+          <Button variant="primary" size="sm" className="me-2 mb-1 w-100" onClick={() => this.setState({ modaledit: true, indexedit: index })}>
+            Edit
+          </Button>
+          <Button variant="danger" size="sm" className="w-100" onClick={() => this.deleteMovie(val.id, val.title)}>
+            Delete
+          </Button>
+        </td>
+      </tr>
+    ));
   };
 
-  renderAddCheckbox = () => {
-    return this.state.jadwal.map((val, index) => {
-      return (
-        <div key={index}>
-          <input type="checkbox" ref={`jadwal ${index}`} />
-          <span className="mr-2">{val}.00</span>
-        </div>
-      );
-    });
+  renderScheduleCheckboxes = (type, filmData = null) => {
+    // Use a consistent schedule template for adding, can be different for editing if needed
+    const scheduleTemplate = this.state.jadwal; 
+    const filmSchedule = filmData ? filmData.jadwal : [];
+
+    return scheduleTemplate.map((jam, index) => (
+      <Form.Check 
+        type="checkbox"
+        id={`${type}-jadwal-${jam}`}
+        key={jam}
+        label={`${jam}:00`}
+        ref={`${type}jadwal${index}`}
+        defaultChecked={filmSchedule.includes(jam)}
+        inline
+        className="me-3"
+      />
+    ));
   };
 
-  renderEditCheckbox = indexedit => {
-    var indexarr = [];
-    var datafilmedit = this.state.dataFilm[indexedit].jadwal;
-    // datafilmedit.forEach((val)=>{
-    //   indexarr.push(this.state.jadwal.indexOf(val))
-    // })
-    for (var i = 0; i < datafilmedit.length; i++) {
-      for (var j = 0; j < this.state.jadwal.length; j++) {
-        if (datafilmedit[i] === this.state.jadwal[j]) {
-          indexarr.push(j);
-        }
-      }
-    }
-    // console.log(this.state.jadwal.indexOf(datafilmedit[2]));
-    var checkbox = this.state.jadwal;
-    var checkboxnew = [];
-    checkbox.forEach(val => {
-      checkboxnew.push({ jam: val, tampiledit: false });
-    });
-    indexarr.forEach(val => {
-      checkboxnew[val].tampiledit = true;
-    });
-    return checkboxnew.map((val, index) => {
-      if (val.tampiledit) {
-        return (
-          <div key={index}>
-            <input type="checkbox" defaultChecked ref={`editjadwal ${index}`} value={val.jam} />
-            <span className="mr-2">{val.jam}.00</span>
-          </div>
-        );
-      } else {
-        return (
-          <div key={index}>
-            <input type="checkbox" ref={`editjadwal ${index}`} value={val.jam} />
-            <span className="mr-2">{val.jam}.00</span>
-          </div>
-        );
-      }
-    });
-  };
 
   render() {
     if (this.props.role !== "admin") {
-      return <div>Error</div>;
-    }
-    const { dataFilm, indexedit } = this.state;
-    const { length } = dataFilm;
-    if (length === 0) {
       return (
-        <div>
-          <Spinner animation="grow" size="xl" />
-          <Spinner animation="grow" />
-        </div>
+        <Container className="text-center mt-5">
+          <Alert variant="danger">You are not authorized to view this page.</Alert>
+        </Container>
       );
     }
+
+    if (this.state.loading) {
+      return (
+        <Container className="text-center mt-5">
+          <Spinner animation="border" variant="primary" style={{width: "3rem", height: "3rem"}}/>
+          <p className="mt-2">Loading data...</p>
+        </Container>
+      );
+    }
+    
+    const { dataFilm, indexedit, datastudio } = this.state;
+    const filmToEdit = dataFilm[indexedit] || {}; // Ensure filmToEdit is an object
+
     return (
-      <div className="mx-3">
-        <Modal isOpen={this.state.modaladd} toggle={() => this.setState({ modaladd: false })}>
-          <ModalHeader>Tambah Film</ModalHeader>
-          <ModalBody>
-            <input type="text" ref="title" placeholder="title" className="form-control mb-3" />
-            <input type="text" ref="image" placeholder="image" className="form-control mb-3" />
-            <textarea rows="5" type="text" ref="synopsys" placeholder="sinopsis" className="form-control mb-3" />
-            Jadwal:
-            <div className="d-flex">{this.renderAddCheckbox()}</div>
-            <input type="text" ref="trailer" placeholder="trailer" className="form-control mb-3" />
-            <select ref="studioId">
-              {this.state.datastudio.map(val => {
-                return <option value={val.id}>{val.nama}</option>;
-              })}
-            </select>
-            <input type="text" ref="sutradara" placeholder="sutradara" className="form-control mb-3" />
-            <input type="number" ref="durasi" placeholder="durasi" className="form-control mb-3" />
-            <input type="text" ref="genre" placeholder="genre" className="form-control mb-3" />
-            <input type="text" ref="produksi" placeholder="produksi" className="form-control mb-3" />
-          </ModalBody>
-          <ModalFooter>
-            <button onClick={this.onSaveDataClick} className="btn btn-success">
-              Save
-            </button>
-            <button onClick={() => this.setState({ modaladd: false })} className="btn btn-danger">
-              Cancel
-            </button>
-          </ModalFooter>
+      <Container fluid className="mt-4">
+        {/* Add Movie Modal */}
+        <Modal show={this.state.modaladd} onHide={() => this.setState({ modaladd: false })} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Add New Movie</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control type="text" ref="addtitle" placeholder="Enter title" />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Image URL</Form.Label>
+                <Form.Control type="text" ref="addimage" placeholder="Enter image URL" />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Synopsis</Form.Label>
+                <Form.Control as="textarea" rows={3} ref="addsynopsys" placeholder="Enter synopsis" />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Schedule</Form.Label>
+                <div>{this.renderScheduleCheckboxes('add')}</div>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Trailer URL (Embed)</Form.Label>
+                <Form.Control type="text" ref="addtrailer" placeholder="Enter trailer embed URL" />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Studio</Form.Label>
+                <Form.Select ref="addstudioId">
+                  {datastudio.map(studio => <option key={studio.id} value={studio.id}>{studio.nama}</option>)}
+                </Form.Select>
+              </Form.Group>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Director</Form.Label>
+                    <Form.Control type="text" ref="addsutradara" placeholder="Enter director" />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Duration (minutes)</Form.Label>
+                    <Form.Control type="number" ref="adddurasi" placeholder="Enter duration" />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Genre</Form.Label>
+                    <Form.Control type="text" ref="addgenre" placeholder="Enter genre(s)" />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Production House</Form.Label>
+                    <Form.Control type="text" ref="addproduksi" placeholder="Enter production house" />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => this.setState({ modaladd: false })}>Cancel</Button>
+            <Button variant="success" onClick={this.onSaveDataClick}>Save Movie</Button>
+          </Modal.Footer>
         </Modal>
 
-        <Modal isOpen={this.state.modaledit} toggle={() => this.setState({ modaledit: false })}>
-          <ModalHeader>Edit Film {dataFilm[indexedit].title}</ModalHeader>
-          <ModalBody>
-            <input type="text" defaultValue={dataFilm[indexedit].title} ref="edittitle" placeholder="title" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].image} ref="editimage" placeholder="image" className="form-control mb-3" />
-            <textarea rows="5" type="text" defaultValue={dataFilm[indexedit].synopsys} ref="editsynopsys" placeholder="sinopsis" className="form-control mb-3" />
-            Jadwal:
-            <div className="d-flex">{this.renderEditCheckbox(indexedit)}</div>
-            <input ref="edittrailer" defaultValue={dataFilm[indexedit].trailer} placeholder="trailer" className="form-control mb-3 mt-3" />
-            Studio :
-            <select ref="studio">
-              {this.state.datastudio.map(val => {
-                return <option value={val.id}>{val.nama}</option>;
-              })}
-            </select>
-            <input type="text" defaultValue={dataFilm[indexedit].sutradara} ref="editsutradara" placeholder="sutradara" className="form-control mb-3 mt-3" />
-            <input type="number" defaultValue={dataFilm[indexedit].durasi} ref="editdurasi" placeholder="durasi" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].genre} ref="editgenre" placeholder="genre" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].produksi} ref="editproduksi" placeholder="produksi" className="form-control mb-3" />
-          </ModalBody>
-          <ModalFooter>
-            <button onClick={this.onUpdateDataClick} className="btn btn-success">
-              Save
-            </button>
-            <button onClick={() => this.setState({ modaledit: false })} className="btn btn-danger">
-              Cancel
-            </button>
-          </ModalFooter>
+        {/* Edit Movie Modal */}
+        <Modal show={this.state.modaledit} onHide={() => this.setState({ modaledit: false })} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Edit Movie: {filmToEdit.title}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Title</Form.Label>
+                <Form.Control type="text" ref="edittitle" defaultValue={filmToEdit.title} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Image URL</Form.Label>
+                <Form.Control type="text" ref="editimage" defaultValue={filmToEdit.image} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Synopsis</Form.Label>
+                <Form.Control as="textarea" rows={3} ref="editsynopsys" defaultValue={filmToEdit.synopsys} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Schedule</Form.Label>
+                <div>{this.renderScheduleCheckboxes('edit', filmToEdit)}</div>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Trailer URL (Embed)</Form.Label>
+                <Form.Control type="text" ref="edittrailer" defaultValue={filmToEdit.trailer} />
+              </Form.Group>
+               <Form.Group className="mb-3">
+                <Form.Label>Studio</Form.Label>
+                <Form.Select ref="editstudioId" defaultValue={filmToEdit.studioId}>
+                  {datastudio.map(studio => <option key={studio.id} value={studio.id}>{studio.nama}</option>)}
+                </Form.Select>
+              </Form.Group>
+              <Row>
+                <Col md={6}>
+                   <Form.Group className="mb-3">
+                    <Form.Label>Director</Form.Label>
+                    <Form.Control type="text" ref="editsutradara" defaultValue={filmToEdit.sutradara} />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Duration (minutes)</Form.Label>
+                    <Form.Control type="number" ref="editdurasi" defaultValue={filmToEdit.durasi} />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Genre</Form.Label>
+                    <Form.Control type="text" ref="editgenre" defaultValue={filmToEdit.genre} />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Production House</Form.Label>
+                    <Form.Control type="text" ref="editproduksi" defaultValue={filmToEdit.produksi} />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => this.setState({ modaledit: false })}>Cancel</Button>
+            <Button variant="primary" onClick={this.onUpdateDataClick}>Save Changes</Button>
+          </Modal.Footer>
         </Modal>
 
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h1>Manage Movies</h1>
+          <Button variant="success" onClick={() => this.setState({ modaladd: true })}>
+            <i className="fas fa-plus me-2"></i>Add New Movie
+          </Button>
+        </div>
+        
         <Fade>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>No.</TableCell>
-                <TableCell>Judul</TableCell>
-                <TableCell>Image.</TableCell>
-                <TableCell>Sinopsis</TableCell>
-                <TableCell>Jadwal Tayang</TableCell>
-                <TableCell>Sutradara</TableCell>
-                <TableCell>Genre</TableCell>
-                <TableCell>Durasi</TableCell>
-                <TableCell>Produksi</TableCell>
-                <TableCell>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>{this.renderMovie()}</TableBody>
+          <Table striped bordered hover responsive className="shadow-sm">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Image</th>
+                <th style={{minWidth: "250px"}}>Synopsis</th>
+                <th>Schedule</th>
+                <th>Director</th>
+                <th>Genre</th>
+                <th>Duration</th>
+                <th>Production</th>
+                <th style={{minWidth: "120px"}}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {this.state.dataFilm.length > 0 ? this.renderMovieRows() : <tr><td colSpan="10" className="text-center">No movies found.</td></tr>}
+            </tbody>
           </Table>
         </Fade>
-        <center>
-          <button
-            style={{ alignContent: "start" }}
-            className="btn btn-dark mt-5 mb-5"
-            onClick={() => {
-              this.setState({ modaladd: true });
-            }}
-          >
-            Add film
-          </button>
-        </center>
-      </div>
+      </Container>
     );
   }
 }

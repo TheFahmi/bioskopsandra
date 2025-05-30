@@ -3,34 +3,15 @@ import { Link, Redirect } from "react-router-dom";
 import { connect } from "react-redux";
 import { LoginSuccessAction, Loginthunk, Login_error } from "./../redux/actions";
 import Loader from "react-loader-spinner";
-// import Axios from 'axios';
-// import { APIURL } from '../support/ApiUrl';
-// import RegisterUser from './RegisterUser'
+import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
 
 class Login extends Component {
-  state = {
-    // error:'',
-    // loading:false
-  };
+  // state = {}; // No local state needed if refs are used for form inputs
 
   onLoginClick = () => {
-    var username = this.refs.username.value;
-    var password = this.refs.password.value;
+    const username = this.usernameRef.value;
+    const password = this.passwordRef.value;
     this.props.Loginthunk(username, password);
-    // this.setState({loading:true})
-    // Axios.get(`${APIURL}users?username=${username}&password=${password}`)
-    // .then(res=>{
-    //     if(res.data.length){
-    //         localStorage.setItem('fakhran',res.data[0].id)
-    //         this.props.LoginSuccessAction(res.data[0])
-    //     }else{
-    //         this.setState({error:'password salah'})
-    //     }
-    //     this.setState({loading:false})
-    // }).catch((err)=>{
-    //     console.log(err)
-    //     this.setState({loading:true})
-    // })
   };
 
   render() {
@@ -38,39 +19,49 @@ class Login extends Component {
       return <Redirect to={"/"} />;
     }
     return (
-      <div style={{ height: "300vh", backgroundColor: "" }}>
-        <div className="d-flex justify-content-center">
-          <div style={{ width: "500px", border: "1px solid black" }} className="rounded p-2">
-            <h1 className>Login</h1>
-            <div className="p-1" style={{ borderBottom: "1px solid black" }}>
-              <input type="text" className="username" style={{ border: "transparent", width: "100%", fontSize: "20px" }} ref="username" placeholder="username " />
-            </div>
-            <div className="p-1" style={{ borderBottom: "1px solid black" }}>
-              <input type="password" className="username" style={{ border: "transparent", width: "100%", fontSize: "20px" }} ref="password" placeholder="password" />
-            </div>
-            {this.props.Auth.error === "" ? null : (
-              <div className="alert alert-danger mt-2">
-                {this.props.Auth.error}{" "}
-                <span onClick={this.props.Login_error} className="float-right font-weight-bold salah">
-                  X
-                </span>
-              </div>
-            )}
-            <div className="mt-4 ">
-              {this.props.Auth.loading ? (
-                <Loader type="puff" color="#00BFFF" height={100} width={100} />
-              ) : (
-                <button className="btn btn-primary" onClick={this.onLoginClick}>
-                  Login
-                </button>
-              )}
-            </div>
-            <div className="mt-2">
-              belum ada akun ?<Link to={"/RegisterUser"}> Register </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Container className="mt-5">
+        <Row className="justify-content-md-center">
+          <Col md={6} lg={5}>
+            <Card className="p-4 shadow-sm">
+              <Card.Body>
+                <h2 className="text-center mb-4">Login</h2>
+                <Form>
+                  <Form.Group className="mb-3" controlId="formBasicEmail">
+                    <Form.Label>Username</Form.Label>
+                    <Form.Control type="text" placeholder="Enter username" ref={ref => (this.usernameRef = ref)} />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3" controlId="formBasicPassword">
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control type="password" placeholder="Password" ref={ref => (this.passwordRef = ref)} />
+                  </Form.Group>
+
+                  {this.props.Auth.error && (
+                    <Alert variant="danger" onClose={this.props.Login_error} dismissible>
+                      {this.props.Auth.error}
+                    </Alert>
+                  )}
+
+                  <div className="d-grid mt-4">
+                    {this.props.Auth.loading ? (
+                      <div className="text-center">
+                        <Loader type="Puff" color="#00BFFF" height={50} width={50} />
+                      </div>
+                    ) : (
+                      <Button variant="primary" onClick={this.onLoginClick} size="lg">
+                        Login
+                      </Button>
+                    )}
+                  </div>
+                </Form>
+                <div className="mt-3 text-center">
+                  Belum punya akun? <Link to={"/RegisterUser"}>Register di sini</Link>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     );
   }
 }
@@ -78,7 +69,7 @@ class Login extends Component {
 const MapstateToprops = state => {
   return {
     AuthLog: state.Auth.login,
-    Auth: state.Auth
+    Auth: state.Auth // Contains error and loading state
   };
 };
 

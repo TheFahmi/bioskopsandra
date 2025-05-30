@@ -28,7 +28,7 @@ class App extends Component {
     var id = localStorage.getItem("fakhran");
     Axios.get(`${APIURL}users/${id}`)
       .then(res => {
-        console.log(res.data);
+        // console.log(res.data);
         this.props.LoginSuccessAction(res.data);
         Axios.get(`${APIURL}orders?_expand=movie&userId=${this.props.userId}&bayar=false`)
           .then(res1 => {
@@ -39,12 +39,12 @@ class App extends Component {
             });
           })
           .catch(err => {
-            console.log(err);
+            // console.log(err);
           });
         // this.setState({ loading: false });
       })
       .catch(err => {
-        console.log(err);
+        // console.log(err);
       })
       .finally(() => {
         this.setState({ loading: false });

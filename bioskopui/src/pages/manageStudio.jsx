@@ -1,8 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { Table, TableBody, TableHead, TableCell, TableRow } from "@material-ui/core";
-import { Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import Fade from "react-reveal/Fade";
+import { Table, Modal, Button, Form, Container, Spinner, Alert } from "react-bootstrap"; // React-Bootstrap imports
+import Fade from "react-reveal/Fade"; // Kept as is
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
 import Swal from "sweetalert2";
@@ -13,203 +12,239 @@ class Managestudio extends Component {
     datastudio: [],
     modaladd: false,
     modaledit: false,
-    idDelete: -1,
-    indexEdit: -1,
-    idEdit: -1
+    indexEdit: -1, // Stores index of the studio being edited
+    idEdit: -1     // Stores ID of the studio being edited
   };
 
   componentDidMount() {
+    this.fetchStudios();
+  }
+
+  fetchStudios = () => {
+    this.setState({ loading: true });
     Axios.get(`${APIURL}studios`)
       .then(res => {
-        console.log(res.data, "datastudios");
-        var data = res.data;
-        this.setState({ datastudio: data, loading: false });
+        this.setState({ datastudio: res.data, loading: false });
       })
       .catch(err => {
-        console.log(err);
+         // console.log(err);
+        this.setState({ loading: false });
+        Swal.fire("Error", "Failed to fetch studio data.", "error");
       });
   }
 
-  onClickEditStudio = index => {
-    var editStudio = this.state.datastudio;
-    this.setState({ indexEdit: index, modaledit: true, idEdit: editStudio[index.id] });
-  };
-
-  onClickSaveStudio = () => {
-    var editStudio = [];
-    var nama = this.refs.nama.value;
-    var jumlahKursi = this.refs.jumlahKursi.value;
-    var newdata = this.state.datastudio;
-
-    var studiobaru = { nama: nama, jumlahKursi: jumlahKursi };
-    newdata.splice(this.state.indexEdit, 1, studiobaru);
-    Axios.put(`${APIURL}studios/${this.state.idEdit}`, studiobaru);
-    this.setState({ datastudio: newdata, modaledit: false, indexEdit: -1, idEdit: -1 });
-
-    Swal.mixin({
-      toast: true,
-      position: "top-end",
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-      onOpen: toast => {
-        toast.addEventListener("mouseenter", Swal.stopTimer);
-        toast.addEventListener("mouseleave", Swal.resumeTimer);
-      }
-    }).fire({
-      icon: "success",
-      title: "edit berhasil"
+  handleShowEditModal = (index) => {
+    const studioToEdit = this.state.datastudio[index];
+    this.setState({ 
+      indexEdit: index, 
+      modaledit: true, 
+      idEdit: studioToEdit.id // Correctly get ID of studio to edit
     });
   };
 
-  onClickAddStudio = () => {
-    var studio = this.refs.studio.value;
-    var jumlahKursi = this.refs.kursi.value;
-    var data = {
-      nama: studio,
-      jumlahKursi
-    };
+  handleCloseEditModal = () => {
+    this.setState({ modaledit: false, indexEdit: -1, idEdit: -1 });
+  }
+  
+  handleSaveEditStudio = () => {
+    const nama = this.editNamaRef.value;
+    const jumlahKursi = parseInt(this.editJumlahKursiRef.value);
 
-    console.log(studio);
-    console.log(jumlahKursi);
-
-    if (studio !== "" && jumlahKursi !== "") {
-      Axios.post(`${APIURL}studios`, data)
-        .then(res => {
-          console.log("res", res);
-          this.setState({ modaladd: false });
-          window.location.reload();
-        })
-        .catch(err => {
-          console.log(err);
-        });
-    } else {
-      console.log("gagal");
+    if (!nama || isNaN(jumlahKursi) || jumlahKursi <= 0) {
+      return Swal.fire("Validation Error", "Studio name and a valid number of seats are required.", "error");
     }
+
+    const updatedStudio = { nama, jumlahKursi };
+    
+    Axios.put(`${APIURL}studios/${this.state.idEdit}`, updatedStudio)
+      .then(() => {
+        this.fetchStudios(); // Refresh data
+        this.handleCloseEditModal();
+        Swal.fire("Success!", "Studio data updated successfully.", "success");
+      })
+      .catch(err => {
+        console.log(err);
+        Swal.fire("Error", "Failed to update studio data.", "error");
+      });
   };
 
-  onClickdeleteStudio = (index) => {
+  handleShowAddModal = () => {
+    this.setState({ modaladd: true });
+  }
+
+  handleCloseAddModal = () => {
+    this.setState({ modaladd: false });
+  }
+
+  handleAddStudio = () => {
+    const nama = this.addNamaRef.value;
+    const jumlahKursi = parseInt(this.addJumlahKursiRef.value);
+
+    if (!nama || isNaN(jumlahKursi) || jumlahKursi <= 0) {
+      return Swal.fire("Validation Error", "Studio name and a valid number of seats are required.", "error");
+    }
+    
+    const newStudio = { nama, jumlahKursi };
+
+    Axios.post(`${APIURL}studios`, newStudio)
+      .then(() => {
+        this.fetchStudios(); // Refresh data
+        this.handleCloseAddModal();
+        Swal.fire("Success!", "New studio added successfully.", "success");
+      })
+      .catch(err => {
+        console.log(err);
+        Swal.fire("Error", "Failed to add new studio.", "error");
+      });
+  };
+
+  handleDeleteStudio = (id, name) => {
     Swal.fire({
-      title: "Yakin hapus" + this.state.datastudio[index].nama + "?",
-      text: "",
+      title: `Are you sure you want to delete ${name}?`,
+      text: "This action cannot be undone.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Hapus",
-      cancelButtonText: "Cancel",
-      reverseButtons: true
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
     }).then(result => {
       if (result.value) {
-        var hapusdata = this.state.datastudio;
-        this.setState({ idDelete: hapusdata[index]["id"] });
-        Swal.fire("Deleted", "Berhasil dihapus", "success");
-        Axios.delete(`${APIURL}studios/${this.state.idDelete}`)
+        Axios.delete(`${APIURL}studios/${id}`)
           .then(() => {
-            Axios.get(`${APIURL}studios`)
-              .then(respon => {
-                this.setState({ datastudio: respon.data });
-              })
-              .catch(error => {
-                console.log(error);
-              });
+            this.fetchStudios(); // Refresh data
+            Swal.fire("Deleted!", `${name} has been deleted.`, "success");
           })
-          .catch(error => {
-            console.log(error);
+          .catch(err => {
+         // console.log(err);
+         // console.log(err);
+             // console.log(err);
+            Swal.fire("Error", `Failed to delete ${name}.`, "error");
           });
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        Swal.fire("Cancelled", "Tidak jadi", "error");
       }
     });
   };
 
-  renderstudios = () => {
-    return this.state.datastudio.map((val, index) => {
-      return (
-        <TableRow key={index}>
-          <TableCell>{index + 1}</TableCell>
-          <TableCell>{val.nama}</TableCell>
-          <TableCell>{val.jumlahKursi}</TableCell>
-          <TableCell>
-            <button onClick={() => this.onClickEditStudio(index)} className="btn btn-dark mr-3">
-              Edit
-            </button>
-            <button onClick={()=>this.onClickdeleteStudio(index)} className="btn btn-outline-dark">
-              Delete
-            </button>
-          </TableCell>
-        </TableRow>
-      );
-    });
+  renderStudioRows = () => {
+    return this.state.datastudio.map((val, index) => (
+      <tr key={val.id}>
+        <td>{index + 1}</td>
+        <td>{val.nama}</td>
+        <td>{val.jumlahKursi}</td>
+        <td>
+          <Button variant="primary" size="sm" className="me-2" onClick={() => this.handleShowEditModal(index)}>
+            Edit
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => this.handleDeleteStudio(val.id, val.nama)}>
+            Delete
+          </Button>
+        </td>
+      </tr>
+    ));
   };
 
   render() {
-    const  {datastudio,indexEdit}=this.state
-    if (this.state.loading) {
-      return <div>Loading</div>;
-    }
-    // console.log(this.state.datastudio,'asdasdas')
-    else {
-      if (this.props.role !== "admin") {
-        return <div> error</div>;
-      } else {
-        return (
-          <div>
-            {indexEdit === -1 ? null : (
-              <Modal isOpen={this.state.modaledit} toggle={() => this.setState({ modaledit: false })}>
-                <ModalHeader>EDIT STUDIOS</ModalHeader>
-                <ModalBody>
-                  <input type="text" defaultValue={datastudio[indexEdit].nama} className="form-control inputaddstudio" ref="nama" placeholder="nama studio" />
-                  <input type="number" defaultValue={datastudio[indexEdit].jumlahKursi} className="form-control inputaddstudio" ref="jumlahKursi" placeholder="jumlah kursi" />
-                </ModalBody>
-                <ModalFooter>
-                  <button type="button" className="btn btn-outline-dark" onClick={this.onClickSaveStudio}>
-                    Save
-                  </button>
-                </ModalFooter>
-              </Modal>
-            )}
+    const { datastudio, indexEdit, modaledit, modaladd, loading } = this.state;
+    const studioToEdit = indexEdit !== -1 ? datastudio[indexEdit] : {};
 
-            <Modal isOpen={this.state.modaladd} toggle={() => this.setState({ modaladd: false })}>
-              <ModalHeader>ADD STUDIOS</ModalHeader>
-              <ModalBody>
-                <input type="text" className="form-control inputaddstudio" ref="studio" placeholder="nama studio" />
-                <input type="number" className="form-control inputaddstudio" ref="kursi" placeholder="jumlah kursi" />
-              </ModalBody>
-              <ModalFooter>
-                <button type="button" className="btn btn-outline-dark" onClick={this.onClickAddStudio}>
-                  Submit
-                </button>
-              </ModalFooter>
-            </Modal>
-
-            <button className="btn btn-success" style={{ margin: "10px" }} onClick={() => this.setState({ modaladd: true })}>
-              {" "}
-              add Data
-            </button>
-            <Fade>
-              {/* <button className='btn btn-success' onClick={()=>this.setState({modaladd:true})}> add Data</button> */}
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>No.</TableCell>
-                    <TableCell>Nama</TableCell>
-                    <TableCell>Jumlah Kursi</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>{this.renderstudios()}</TableBody>
-              </Table>
-            </Fade>
-          </div>
-        );
-      }
+    if (this.props.role !== "admin") {
+      return (
+        <Container className="text-center mt-5">
+          <Alert variant="danger">You are not authorized to view this page.</Alert>
+        </Container>
+      );
     }
+
+    if (loading) {
+      return (
+        <Container className="text-center mt-5">
+          <Spinner animation="border" variant="primary" style={{width: "3rem", height: "3rem"}} />
+          <p className="mt-2">Loading studios...</p>
+        </Container>
+      );
+    }
+    
+    return (
+      <Container className="mt-4">
+        {/* Edit Studio Modal */}
+        {indexEdit !== -1 && (
+          <Modal show={modaledit} onHide={this.handleCloseEditModal}>
+            <Modal.Header closeButton>
+              <Modal.Title>Edit Studio: {studioToEdit.nama}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Studio Name</Form.Label>
+                  <Form.Control type="text" defaultValue={studioToEdit.nama} ref={ref => (this.editNamaRef = ref)} />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Number of Seats</Form.Label>
+                  <Form.Control type="number" defaultValue={studioToEdit.jumlahKursi} ref={ref => (this.editJumlahKursiRef = ref)} />
+                </Form.Group>
+              </Form>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={this.handleCloseEditModal}>Cancel</Button>
+              <Button variant="primary" onClick={this.handleSaveEditStudio}>Save Changes</Button>
+            </Modal.Footer>
+          </Modal>
+        )}
+
+        {/* Add Studio Modal */}
+        <Modal show={modaladd} onHide={this.handleCloseAddModal}>
+          <Modal.Header closeButton>
+            <Modal.Title>Add New Studio</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Studio Name</Form.Label>
+                <Form.Control type="text" placeholder="Enter studio name" ref={ref => (this.addNamaRef = ref)} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Number of Seats</Form.Label>
+                <Form.Control type="number" placeholder="Enter number of seats" ref={ref => (this.addJumlahKursiRef = ref)} />
+              </Form.Group>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={this.handleCloseAddModal}>Cancel</Button>
+            <Button variant="success" onClick={this.handleAddStudio}>Add Studio</Button>
+          </Modal.Footer>
+        </Modal>
+
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h1>Manage Studios</h1>
+          <Button variant="success" onClick={this.handleShowAddModal}>
+             <i className="fas fa-plus me-2"></i>Add New Studio
+          </Button>
+        </div>
+
+        <Fade>
+          <Table striped bordered hover responsive className="shadow-sm">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Number of Seats</th>
+                <th style={{minWidth: "120px"}}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {datastudio.length > 0 ? this.renderStudioRows() : <tr><td colSpan="4" className="text-center">No studios found.</td></tr>}
+            </tbody>
+          </Table>
+        </Fade>
+      </Container>
+    );
   }
 }
 
 const MapstateToprops = state => {
   return {
-    AuthLog: state.Auth.login,
-    userId: state.Auth.id,
+    // AuthLog: state.Auth.login, // Not used
+    // userId: state.Auth.id, // Not used
     role: state.Auth.role
   };
 };

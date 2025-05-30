@@ -2,249 +2,272 @@ import React, { Component } from "react";
 import { connect } from "react-redux";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
-import { Modal, ModalBody, ModalFooter } from "reactstrap";
+import { Modal, Button, Container, Row, Col, ButtonGroup, Spinner } from "react-bootstrap"; // Updated imports
 import Numeral from "numeral";
 import { Redirect } from "react-router-dom";
+
+// Styles for seats, can be moved to a CSS file if preferred
+const seatStyles = {
+  width: '40px',
+  height: '40px',
+  margin: '3px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: '12px'
+};
 
 class Belitiket extends Component {
   state = {
     datamovie: {},
-    seats: 260,
-    baris: 0,
+    seats: 0, // Initialize with 0
+    baris: 0, // Initialize with 0
     booked: [],
     loading: true,
-    jam: 12,
+    jam: this.props.location.state && this.props.location.state.jadwal && this.props.location.state.jadwal.length > 0 
+         ? this.props.location.state.jadwal[0] 
+         : 12, // Default to 12 or first available if location state is problematic
     pilihan: [],
     openmodalcart: false,
     redirecthome: false
   };
 
   componentDidMount() {
-    this.onJamchange();
+    if (this.props.location.state) {
+      this.onJamchange();
+    } else {
+      this.setState({ loading: false }); // No location state, stop loading
+    }
   }
+
+  componentDidUpdate(prevProps, prevState) {
+    // If jam changes, fetch new seat data
+    if (prevState.jam !== this.state.jam) {
+      this.onJamchange();
+    }
+  }
+  
   onJamchange = () => {
-    var studioId = this.props.location.state.studioId;
-    var movieId = this.props.location.state.id;
+    this.setState({ loading: true, pilihan: [] }); // Set loading true when jam changes
+    const studioId = this.props.location.state.studioId;
+    const movieId = this.props.location.state.id;
+
     Axios.get(`${APIURL}studios/${studioId}`)
       .then(res1 => {
         Axios.get(`${APIURL}orders?movieId=${movieId}&jadwal=${this.state.jam}`)
           .then(res2 => {
-            var arrAxios = [];
-            res2.data.forEach(val => {
-              arrAxios.push(Axios.get(`${APIURL}ordersDetails?orderId=${val.id}`));
-            });
-            var arrAxios2 = [];
+            const arrAxios = res2.data.map(val => Axios.get(`${APIURL}ordersDetails?orderId=${val.id}`));
             Axios.all(arrAxios)
               .then(res3 => {
-                console.log(res3);
-                res3.forEach(val => {
-                  arrAxios2.push(...val.data);
-                });
-                console.log(arrAxios2);
+                const arrAxios2 = res3.flatMap(val => val.data);
                 this.setState({
                   datamovie: this.props.location.state,
                   seats: res1.data.jumlahKursi,
-                  baris: res1.data.jumlahKursi / 20,
+                  baris: res1.data.jumlahKursi / 20, // Assuming 20 seats per row
                   booked: arrAxios2,
                   loading: false
                 });
               })
               .catch(err => {
                 console.log(err);
+                this.setState({ loading: false });
               });
           })
           .catch(err2 => {
             console.log(err2);
+            this.setState({ loading: false });
           });
       })
       .catch(err1 => {
-        console.log(err1);
+                 // console.log(err);
+             // console.log(err2);
+         // console.log(err1);
+        this.setState({ loading: false });
       });
   };
+
   onButtonjamclick = val => {
-    this.setState({ jam: val, pilihan: [] });
-    this.onJamchange();
+    this.setState({ jam: val }); // Let CDU handle onJamChange call
   };
 
   onPilihSeatClick = (row, seat) => {
-    var pilihan = this.state.pilihan;
-    pilihan.push({ row: row, seat }); //seat:seat bisa juga ditulis begitu
-    this.setState({ pilihan: pilihan });
+    const pilihan = [...this.state.pilihan, { row, seat }];
+    this.setState({ pilihan });
+  };
+
+  onCancelseatClick = (row, seat) => {
+    const pilihan = this.state.pilihan.filter(val => !(val.row === row && val.seat === seat));
+    this.setState({ pilihan });
   };
 
   onOrderClick = () => {
-    var userId = this.props.UserId;
-    var movieId = this.state.datamovie.id;
-    var pilihan = this.state.pilihan;
-    var jadwal = this.state.jam;
-    var totalharga = this.state.pilihan.length * 25000;
-    var bayar = false;
-    var dataorders = {
-      userId,
-      movieId,
+    const { UserId, location } = this.props;
+    const { datamovie, pilihan, jam } = this.state;
+    const totalharga = pilihan.length * 25000;
+    
+    const dataorders = {
+      userId: UserId,
+      movieId: datamovie.id,
       totalharga,
-      jadwal,
-      bayar
+      jadwal: jam,
+      bayar: false
     };
+
     Axios.post(`${APIURL}orders`, dataorders)
       .then(res => {
-        console.log(res.data.id);
-        var dataordersdetails = [];
-        pilihan.forEach(val => {
-          dataordersdetails.push({
-            orderId: res.data.id,
-            seat: val.seat,
-            row: val.row
-          });
-        });
-        var dataordersdetails2 = [];
-        dataordersdetails.forEach(val => {
-          dataordersdetails2.push(Axios.post(`${APIURL}ordersDetails`, val));
-        });
-        Axios.all(dataordersdetails2)
-          .then(res1 => {
+        const orderId = res.data.id;
+        const dataordersdetails = pilihan.map(val => ({
+          orderId,
+          seat: val.seat,
+          row: val.row
+        }));
+        
+        const postDetailsPromises = dataordersdetails.map(val => Axios.post(`${APIURL}ordersDetails`, val));
+        Axios.all(postDetailsPromises)
+          .then(() => {
             this.setState({ openmodalcart: true });
           })
-          .catch(err => {
-            console.log(err);
-          });
+           .catch(err => { /* console.log(err) */ }); // Intentionally kept concise for this specific location
       })
-      .catch(err => {
-        console.log(err);
-      });
+       .catch(err => { /* console.log(err) */ }); // Intentionally kept concise for this specific location
   };
 
   renderHarga = () => {
-    var jumlahtiket = this.state.pilihan.length;
-    var harga = jumlahtiket * 25000;
-    // this.setState({harga})
+    const jumlahtiket = this.state.pilihan.length;
+    const harga = jumlahtiket * 25000;
     return (
-      <div>
-        {jumlahtiket} tiket X {"Rp." + Numeral(25000).format("0,0.00")}= {"Rp" + Numeral(harga).format("0,0.00")}
+      <div className="mt-3 h5">
+        {jumlahtiket} ticket(s) x {Numeral(25000).format("Rp0,0")} = <strong>{Numeral(harga).format("Rp0,0")}</strong>
       </div>
     );
   };
 
-  onCancelseatClick = (row, seat) => {
-    var pilihan = this.state.pilihan;
-    var rows = row;
-    var seats = seat;
-    var arr = [];
-    for (var i = 0; i < pilihan.length; i++) {
-      if (pilihan[i].row !== rows || pilihan[i].seat !== seats) {
-        arr.push(pilihan[i]);
-      }
-    }
-    this.setState({ pilihan: arr });
-  };
-
   renderseat = () => {
-    var arr = [];
-    for (let i = 0; i < this.state.baris; i++) {
-      arr.push([]);
-      for (let j = 0; j < this.state.seats / this.state.baris; j++) {
-        arr[i].push(1);
-      }
-    }
-    console.log(this.state.booked);
+    const { seats, baris, booked, pilihan } = this.state;
+    if (baris === 0) return null; // Avoid division by zero if baris is not set
 
-    for (let j = 0; j < this.state.booked.length; j++) {
-      arr[this.state.booked[j].row][this.state.booked[j].seat] = 3;
-    }
+    const seatsPerRow = seats / baris;
+    let arr = Array(baris).fill(null).map(() => Array(seatsPerRow).fill(1));
 
-    for (let a = 0; a < this.state.pilihan.length; a++) {
-      arr[this.state.pilihan[a].row][this.state.pilihan[a].seat] = 2;
-    }
-    var alphabet = "abcdefghijklmnopqrstuvwxyz".toUpperCase();
-    var jsx = arr.map((val, index) => {
-      return (
-        <div key={index}>
-          {val.map((val1, i) => {
-            if (val1 === 3) {
-              return (
-                <button key={i} disabled className="rounded btn-disble mr-2 mt-2 bg-danger text-center">
-                  {alphabet[index] + (i + 1)}
-                </button>
-              );
-            } else if (val1 === 2) {
-              return (
-                <button key={i} onClick={() => this.onCancelseatClick(index, i)} className="rounded btn-order mr-2 mt-2 btn-pilih text-center">
-                  {alphabet[index] + (i + 1)}
-                </button>
-              );
-            }
-            return (
-              <button key={i} onClick={() => this.onPilihSeatClick(index, i)} className="rounded btn-order mr-2 mt-2 text-center">
-                {alphabet[index] + (i + 1)}
-              </button>
-            );
-          })}
-        </div>
-      );
+    booked.forEach(val => {
+      if (val.row < baris && val.seat < seatsPerRow) arr[val.row][val.seat] = 3; // Booked
     });
-    return jsx;
+    pilihan.forEach(val => {
+      if (val.row < baris && val.seat < seatsPerRow) arr[val.row][val.seat] = 2; // Selected
+    });
+
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    return arr.map((rowSeats, rowIndex) => (
+      <div key={rowIndex} className="d-flex justify-content-center mb-1">
+        {rowSeats.map((seatStatus, seatIndex) => {
+          let variant = "outline-primary";
+          let disabled = false;
+          let onClickHandler = () => this.onPilihSeatClick(rowIndex, seatIndex);
+
+          if (seatStatus === 2) { // Selected
+            variant = "primary";
+            onClickHandler = () => this.onCancelseatClick(rowIndex, seatIndex);
+          } else if (seatStatus === 3) { // Booked
+            variant = "danger";
+            disabled = true;
+          }
+          
+          return (
+            <Button 
+              key={seatIndex} 
+              style={seatStyles}
+              variant={variant}
+              disabled={disabled}
+              onClick={onClickHandler}
+              className="rounded"
+            >
+              {alphabet[rowIndex]}{seatIndex + 1}
+            </Button>
+          );
+        })}
+      </div>
+    ));
   };
+  
   renderbutton = () => {
-    return this.state.datamovie.jadwal.map((val, index) => {
-      if (this.state.jam === val) {
-        return (
-          <button className="mx-2 btn btn-dark" disabled>
-            {val}.00
-          </button>
-        );
-      }
-      return (
-        <button className="mx-2 btn btn-dark" onClick={() => this.onButtonjamclick(val)}>
-          {val}.00
-        </button>
-      );
-    });
+    if (!this.state.datamovie.jadwal) return null;
+    return (
+      <ButtonGroup className="mb-3">
+        {this.state.datamovie.jadwal.map((val) => (
+          <Button
+            key={val}
+            variant={this.state.jam === val ? "dark" : "outline-dark"}
+            onClick={() => this.onButtonjamclick(val)}
+            disabled={this.state.loading && this.state.jam !== val} // Disable other buttons when loading
+          >
+            {val}:00
+          </Button>
+        ))}
+      </ButtonGroup>
+    );
   };
 
-  beliTiket = () => {
-    window.location.reload();
-    // this.setState({ redirecthome: true });
-    return <Redirect to={"/"} />
+  handleBeliTiketSuccess = () => {
+    // Instead of window.location.reload(), redirect to home or another appropriate page
+    this.setState({ redirecthome: true }); 
   };
 
   render() {
-    if (this.props.location.state && this.props.AuthLog) {
-      // if (this.state.redirecthome) {
-      //   return <Redirect to={"/"} />;
-      // }
-      return (
-        <div>
-          <Modal isOpen={this.state.openmodalcart}>
-            <ModalBody>Kursi berhasil dipilih</ModalBody>
-            <ModalFooter>
-              <button className="btn btn-dark" onClick={this.beliTiket}>
-                {" "}
-                Beli Tiket
-              </button>
-            </ModalFooter>
-          </Modal>
-          <center className="mt-1">
-            {this.state.loading ? null : this.renderbutton()}
-            <div>
-              {this.state.pilihan.length ? (
-                <button className="btn btn-dark mt-3" onClick={this.onOrderClick}>
-                  Order
-                </button>
-              ) : null}
-            </div>
-            {this.state.pilihan.length ? this.renderHarga() : null}
-          </center>
-          <div>{this.state.datamovie.title}</div>
-          <div className="d-flex justify-content-center mt-4">
-            <div>
-              {this.state.loading ? null : this.renderseat()}
-              <div className="layar mt-4">Layar</div>
-            </div>
-          </div>
-        </div>
-      );
+    if (!this.props.location.state || !this.props.AuthLog) {
+      return <Redirect to="/login" />; // Or a 404 page / custom message
     }
-    return <div>404 not found</div>;
+    if (this.state.redirecthome) {
+      return <Redirect to="/" />;
+    }
+
+    return (
+      <Container className="mt-4">
+        <Modal show={this.state.openmodalcart} onHide={() => this.setState({ openmodalcart: false })} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Order Confirmation</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>Seats successfully selected!</Modal.Body>
+          <Modal.Footer>
+            <Button variant="success" onClick={this.handleBeliTiketSuccess}>
+              Buy Ticket & Go Home
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        <Row className="justify-content-center text-center">
+          <Col md={8}>
+            <h2>{this.state.datamovie.title}</h2>
+            <div className="my-3">
+              {this.state.loading && this.state.pilihan.length === 0 ? <Spinner animation="border" /> : this.renderbutton()}
+            </div>
+            
+            {this.state.pilihan.length > 0 && this.renderHarga()}
+
+            {this.state.pilihan.length > 0 && (
+              <Button variant="success" className="my-3" onClick={this.onOrderClick}>
+                Order Now
+              </Button>
+            )}
+          </Col>
+        </Row>
+        
+        <Row className="justify-content-center mt-3">
+          <Col md={10} className="overflow-auto" style={{maxWidth: '100%'}}> {/* Added overflow-auto for smaller screens */}
+            {this.state.loading ? (
+              <div className="text-center"><Spinner animation="grow" variant="info" /> Rendering Seats...</div>
+            ) : (
+              this.renderseat()
+            )}
+            <div 
+              className="text-center bg-dark text-white p-2 mt-3 rounded shadow-sm" 
+              style={{width: '80%', margin: 'auto'}}
+            >
+              SCREEN
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    );
   }
 }
 
