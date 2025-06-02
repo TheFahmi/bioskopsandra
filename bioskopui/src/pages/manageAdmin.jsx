@@ -1,13 +1,11 @@
 import React, { Component } from "react";
-import { Table, TableBody, TableHead, TableCell, TableRow } from "@material-ui/core";
+import { Navigate } from "react-router-dom";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
-import { Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import Fade from "react-reveal/Fade";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { Spinner } from "reactstrap";
 import { connect } from "react-redux";
+import { FaPlus, FaEdit, FaTrash, FaFilm, FaEye, FaTimes, FaClock, FaPlay, FaTheaterMasks, FaUser } from "react-icons/fa";
 
 const Myswal = withReactContent(Swal);
 
@@ -16,132 +14,233 @@ class ManageAdmin extends Component {
     dataFilm: [],
     modaladd: false,
     modaledit: false,
+    modalview: false,
     indexedit: 0,
-    iddelete: -1,
     jadwal: [12, 14, 16, 18, 20, 22],
-    datastudio: []
-  };
-
-  onUpdateDataClick = () => {
-    var jadwaltemplate = this.state.jadwal;
-    var jadwal = [];
-    var id = this.state.dataFilm[this.state.indexedit].id;
-    // console.log(this.refs.jadwal0);
-    for (var i = 0; i < jadwaltemplate.length; i++) {
-      if (this.refs[`editjadwal ${i}`].checked) {
-        jadwal.push(jadwaltemplate[i]);
-      }
-    }
-    var iniref = this.refs;
-    var title = iniref.edittitle.value;
-    var image = iniref.editimage.value;
-    var sinopsis = iniref.editsynopsys.value;
-    var sutradara = iniref.editsutradara.value;
-    var genre = iniref.editgenre.value;
-    var durasi = iniref.editdurasi.value;
-    var produksi = iniref.editproduksi.value;
-    var trailer = iniref.edittrailer.value;
-    var studioId = iniref.studio.value;
-
-    var data = {
-      title: title,
-      image: image,
-      synopsys: sinopsis,
-      sutradara: sutradara,
-      genre: genre,
-      durasi: durasi,
-      jadwal: jadwal,
-      produksi: produksi,
-      trailer,
-      studioId
-    };
-
-    if (title === "" || image === "" || sinopsis === "" || genre === "" || jadwal === "" || produksi === "") {
-      Myswal.fire("Failed", "Data harus diisi semua", "error");
-    } else {
-      Axios.patch(`${APIURL}movies/${id}`, data)
-        .then(res => {
-          Axios.get(`${APIURL}movies`).then(res => {
-            this.setState({ dataFilm: res.data });
-          });
-        })
-        .catch(err => {
-          console.log(err);
-        });
-      this.setState({ modaladd: false });
-      Myswal.fire("Berhasil", "Data berhasil dimasukkan", "success");
-    }
-  };
-
-  onSaveDataClick = () => {
-    var jadwaltemplate = [12, 14, 16, 18, 20];
-    var jadwal = [];
-    // console.log(this.refs.jadwal0);
-    for (var i = 0; i < jadwaltemplate.length; i++) {
-      if (this.refs[`jadwal ${i}`].checked) {
-        jadwal.push(jadwaltemplate[i]);
-      }
-    }
-    var iniref = this.refs;
-    var title = iniref.title.value;
-    var image = iniref.image.value;
-    var sinopsis = iniref.synopsys.value;
-    var sutradara = iniref.sutradara.value;
-    var genre = iniref.genre.value;
-    var durasi = iniref.durasi.value;
-    var produksi = iniref.produksi.value;
-    var trailer = iniref.trailer.value;
-    var studioId = iniref.studioId.value;
-
-    var data = {
-      title: title,
-      image: image,
-      synopsys: sinopsis,
-      sutradara: sutradara,
-      genre: genre,
-      durasi: durasi,
-      jadwal: jadwal,
-      produksi: produksi,
-      trailer,
-      studioId
-    };
-
-    if (title === "" || image === "" || sinopsis === "" || genre === "" || jadwal === "" || produksi === "") {
-      Myswal.fire("Failed", "Data harus diisi semua", "error");
-    } else {
-      Myswal.fire("Berhasil", "Data berhasil dimasukkan", "success");
-
-      Axios.post(`${APIURL}movies`, data)
-        .then(res => {
-          Axios.get(`${APIURL}movies`).then(res => {
-            this.setState({ dataFilm: res.data });
-          });
-        })
-        .catch(err => {
-          console.log(err);
-        });
-      this.setState({ modaladd: false });
+    datastudio: [],
+    loading: true,
+    readmoreselected: -1,
+    viewMovie: null,
+    formData: {
+      title: '',
+      image: '',
+      synopsys: '',
+      sutradara: '',
+      genre: '',
+      durasi: '',
+      jadwal: [],
+      produksi: '',
+      trailer: '',
+      studioId: ''
     }
   };
 
   componentDidMount() {
+    this.fetchData();
+  }
+
+  fetchData = () => {
+    this.setState({ loading: true });
     Axios.get(`${APIURL}movies`)
-      .then(res => {
-        // console.log(res.data)
-        Axios.get(`${APIURL}studios`).then(res1 => {
-          this.setState({
-            dataFilm: res.data,
-            datastudio: res1.data
+      .then(resMovies => {
+        Axios.get(`${APIURL}studios`)
+          .then(resStudios => {
+            this.setState({
+              dataFilm: resMovies.data,
+              datastudio: resStudios.data,
+              loading: false
+            });
+          })
+          .catch(errStudios => {
+            console.log(errStudios);
+            this.setState({ loading: false });
+            Myswal.fire("Error", "Failed to fetch studio data.", "error");
           });
-        });
+      })
+      .catch(errMovies => {
+             // console.log(errStudios);
+         // console.log(errMovies);
+        this.setState({ loading: false });
+        Myswal.fire("Error", "Failed to fetch movie data.", "error");
+      });
+  }
+
+  handleInputChange = (field, value) => {
+    this.setState({
+      formData: {
+        ...this.state.formData,
+        [field]: value
+      }
+    });
+  };
+
+  handleScheduleChange = (time, checked) => {
+    const { formData } = this.state;
+    let newSchedule = [...formData.jadwal];
+
+    if (checked) {
+      if (!newSchedule.includes(time)) {
+        newSchedule.push(time);
+      }
+    } else {
+      newSchedule = newSchedule.filter(t => t !== time);
+    }
+
+    this.setState({
+      formData: {
+        ...formData,
+        jadwal: newSchedule
+      }
+    });
+  };
+
+  handleShowAddModal = () => {
+    this.setState({
+      modaladd: true,
+      formData: {
+        title: '',
+        image: '',
+        synopsys: '',
+        sutradara: '',
+        genre: '',
+        durasi: '',
+        jadwal: [],
+        produksi: '',
+        trailer: '',
+        studioId: this.state.datastudio.length > 0 ? this.state.datastudio[0].id : ''
+      }
+    });
+  };
+
+  handleCloseAddModal = () => {
+    this.setState({
+      modaladd: false,
+      formData: {
+        title: '',
+        image: '',
+        synopsys: '',
+        sutradara: '',
+        genre: '',
+        durasi: '',
+        jadwal: [],
+        produksi: '',
+        trailer: '',
+        studioId: ''
+      }
+    });
+  };
+
+  handleShowEditModal = (index) => {
+    const movie = this.state.dataFilm[index];
+    this.setState({
+      modaledit: true,
+      indexedit: index,
+      formData: {
+        title: movie.title || '',
+        image: movie.image || '',
+        synopsys: movie.synopsys || '',
+        sutradara: movie.sutradara || '',
+        genre: movie.genre || '',
+        durasi: movie.durasi || '',
+        jadwal: movie.jadwal || [],
+        produksi: movie.produksi || '',
+        trailer: movie.trailer || '',
+        studioId: movie.studioId || ''
+      }
+    });
+  };
+
+  handleCloseEditModal = () => {
+    this.setState({
+      modaledit: false,
+      indexedit: 0,
+      formData: {
+        title: '',
+        image: '',
+        synopsys: '',
+        sutradara: '',
+        genre: '',
+        durasi: '',
+        jadwal: [],
+        produksi: '',
+        trailer: '',
+        studioId: ''
+      }
+    });
+  };
+
+  handleShowViewModal = (movie) => {
+    this.setState({
+      modalview: true,
+      viewMovie: movie
+    });
+  };
+
+  handleCloseViewModal = () => {
+    this.setState({
+      modalview: false,
+      viewMovie: null
+    });
+  };
+
+  onUpdateDataClick = () => {
+    const { formData, dataFilm, indexedit } = this.state;
+    const currentFilm = dataFilm[indexedit];
+
+    if (!formData.title || !formData.image || !formData.synopsys || !formData.sutradara ||
+        !formData.genre || !formData.durasi || !formData.produksi || !formData.trailer ||
+        !formData.studioId || formData.jadwal.length === 0) {
+      return Myswal.fire("Validation Error", "All fields must be filled, and schedule/studio must be selected.", "error");
+    }
+
+    const updatedData = {
+      ...formData,
+      durasi: parseInt(formData.durasi) || 0,
+      studioId: parseInt(formData.studioId)
+    };
+
+    Axios.patch(`${APIURL}movies/${currentFilm.id}`, updatedData)
+      .then(() => {
+        this.fetchData();
+        this.handleCloseEditModal();
+        Myswal.fire("Success!", "Movie data updated successfully.", "success");
       })
       .catch(err => {
         console.log(err);
+        Myswal.fire("Error", "Failed to update movie data.", "error");
       });
-  }
-  deleteMovie = index => {
+  };
+
+  onSaveDataClick = () => {
+    const { formData } = this.state;
+
+    if (!formData.title || !formData.image || !formData.synopsys || !formData.sutradara ||
+        !formData.genre || !formData.durasi || !formData.produksi || !formData.trailer ||
+        !formData.studioId || formData.jadwal.length === 0) {
+      return Myswal.fire("Validation Error", "All fields must be filled, and schedule/studio must be selected.", "error");
+    }
+
+    const newData = {
+      ...formData,
+      durasi: parseInt(formData.durasi) || 0,
+      studioId: parseInt(formData.studioId)
+    };
+
+    Axios.post(`${APIURL}movies`, newData)
+      .then(() => {
+        this.fetchData();
+        this.handleCloseAddModal();
+        Myswal.fire("Success!", "New movie added successfully.", "success");
+      })
+      .catch(err => {
+        console.log(err);
+        Myswal.fire("Error", "Failed to add new movie.", "error");
+      });
+  };
+
+  deleteMovie = (id, title) => {
     Myswal.fire({
-      title: `Hapus  ${this.state.dataFilm[index].title}`,
+      title: `Delete ${title}?`,
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
@@ -150,241 +249,462 @@ class ManageAdmin extends Component {
       reverseButtons: true
     }).then(result => {
       if (result.value) {
-        const datahapus = this.state.dataFilm;
-        this.setState({ iddelete: datahapus[index].id });
-        Axios.delete(`${APIURL}movies/${this.state.iddelete}`).then(() => {
-          Axios.get(`${APIURL}movies`)
-            .then(res => {
-              this.setState({ dataFilm: res.data });
-            })
-            .catch(err => {
-              console.log(err);
-            });
-        });
-        console.log(this.state.iddelete);
-        // datahapus.splice(index, 1);
-        Myswal.fire("Deleted!", "Your file has been deleted.", "success");
-      } else {
-        Myswal.fire("Cancelled", "", "error");
+        Axios.delete(`${APIURL}movies/${id}`)
+          .then(() => {
+            this.fetchData(); // Refresh data
+            Myswal.fire("Deleted!", `${title} has been deleted.`, "success");
+          })
+          .catch(err => {
+         // console.log(err);
+         // console.log(err);
+             // console.log(err);
+            Myswal.fire("Error", `Failed to delete ${title}.`, "error");
+          });
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        Myswal.fire("Cancelled", `${title} is safe :)`, "info");
       }
     });
   };
 
-  renderMovie = () => {
-    return this.state.dataFilm.map((val, index) => {
-      return (
-        <TableRow key={index}>
-          <TableCell>{index + 1}</TableCell>
-          <TableCell>{val.title}</TableCell>
-          <TableCell>
-            <img src={val.image} alt="gambar" height="200px" />
-          </TableCell>
+  renderMovieCards = () => {
+    return this.state.dataFilm.map((movie, index) => (
+      <div key={movie.id} className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+        <div className="p-6">
+          <div className="flex items-start space-x-4 mb-4">
+            {/* Movie Poster */}
+            <div className="flex-shrink-0">
+              <img
+                src={movie.image}
+                alt={movie.title}
+                className="w-24 h-36 object-cover rounded-lg shadow-md"
+              />
+            </div>
 
-          {val.synopsys.split("").length <= 50 ? (
-            <TableCell>{val.synopsys}</TableCell>
-          ) : this.state.readmoreselected === index ? (
-            <TableCell>
-              {val.synopsys}
-              <span className="readMore" onClick={() => this.setState({ readmoreselected: -1 })}>
-                Read less
-              </span>
-            </TableCell>
-          ) : (
-            <TableCell>
-              {val.synopsys.split("").filter((val, index) => index <= 50)}
-              <span className="readMore" onClick={() => this.setState({ readmoreselected: index })}>
-                ReadMore
-              </span>
-            </TableCell>
-          )}
-          <TableCell align="center" style={{ width: "60px" }}>
-            {val.jadwal.map((val, index) => {
-              return (
-                <button className="btn btn-dark my-1" style={{ height: "2rem", lineHeight: "14px", cursor: "text" }}>
-                  {val}:00
-                </button>
-              );
-            })}
-          </TableCell>
-          <TableCell>{val.sutradara}</TableCell>
-          <TableCell>{val.genre}</TableCell>
-          <TableCell>{val.durasi}</TableCell>
-          <TableCell>{val.produksi}</TableCell>
-          <TableCell>
+            {/* Movie Info */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 truncate">
+                {movie.title}
+              </h3>
+
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <FaUser className="mr-2 text-blue-500" />
+                  <span className="font-medium">Director:</span>
+                  <span className="ml-1">{movie.sutradara}</span>
+                </div>
+
+                <div className="flex items-center">
+                  <FaFilm className="mr-2 text-purple-500" />
+                  <span className="font-medium">Genre:</span>
+                  <span className="ml-1">{movie.genre}</span>
+                </div>
+
+                <div className="flex items-center">
+                  <FaClock className="mr-2 text-green-500" />
+                  <span className="font-medium">Duration:</span>
+                  <span className="ml-1">{movie.durasi} minutes</span>
+                </div>
+
+                <div className="flex items-center">
+                  <FaTheaterMasks className="mr-2 text-orange-500" />
+                  <span className="font-medium">Production:</span>
+                  <span className="ml-1">{movie.produksi}</span>
+                </div>
+              </div>
+
+              {/* Synopsis */}
+              <div className="mt-3">
+                <p className="text-sm text-gray-700">
+                  {movie.synopsys.length <= 100 ? movie.synopsys :
+                    this.state.readmoreselected === index ? (
+                      <>
+                        {movie.synopsys}
+                        <button
+                          onClick={() => this.setState({ readmoreselected: -1 })}
+                          className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Read less
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {movie.synopsys.substring(0, 100)}...
+                        <button
+                          onClick={() => this.setState({ readmoreselected: index })}
+                          className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Read more
+                        </button>
+                      </>
+                    )
+                  }
+                </p>
+              </div>
+
+              {/* Schedule */}
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-2">
+                  {movie.jadwal.map(time => (
+                    <span key={time} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <FaClock className="inline mr-1" />
+                      {time}:00
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
             <button
-              className="btn btn-dark mb-2 mr-3 mt-2"
-              onClick={() => {
-                this.setState({ modaledit: true, indexedit: index });
-              }}
+              onClick={() => this.handleShowViewModal(movie)}
+              className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+              title="View Details"
             >
+              <FaEye className="mr-1" />
+              View
+            </button>
+            <button
+              onClick={() => this.handleShowEditModal(index)}
+              className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <FaEdit className="mr-1" />
               Edit
             </button>
-            <button onClick={() => this.deleteMovie(index)} className="btn btn-dark">
+            <button
+              onClick={() => this.deleteMovie(movie.id, movie.title)}
+              className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            >
+              <FaTrash className="mr-1" />
               Delete
             </button>
-          </TableCell>
-        </TableRow>
-      );
-    });
+          </div>
+        </div>
+      </div>
+    ));
   };
 
-  renderAddCheckbox = () => {
-    return this.state.jadwal.map((val, index) => {
+  renderScheduleCheckboxes = () => {
+    const { formData } = this.state;
+    const scheduleTemplate = this.state.jadwal;
+
+    return (
+      <div className="grid grid-cols-3 gap-3">
+        {scheduleTemplate.map((time) => (
+          <label key={time} className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.jadwal.includes(time)}
+              onChange={(e) => this.handleScheduleChange(time, e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <span className="text-sm font-medium text-gray-700">{time}:00</span>
+          </label>
+        ))}
+      </div>
+    );
+  };
+
+
+  renderModal = (type) => {
+    const { modaladd, modaledit, modalview, formData, viewMovie, datastudio } = this.state;
+
+    if (type === 'view' && modalview && viewMovie) {
       return (
-        <div key={index}>
-          <input type="checkbox" ref={`jadwal ${index}`} />
-          <span className="mr-2">{val}.00</span>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-blue-600 text-white p-6 rounded-t-lg">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Movie Details</h3>
+                <button onClick={this.handleCloseViewModal} className="text-white hover:text-gray-200">
+                  <FaTimes className="text-xl" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start space-x-6 mb-6">
+                <img
+                  src={viewMovie.image}
+                  alt={viewMovie.title}
+                  className="w-32 h-48 object-cover rounded-lg shadow-md"
+                />
+                <div className="flex-1">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4">{viewMovie.title}</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><span className="font-semibold">Director:</span> {viewMovie.sutradara}</div>
+                    <div><span className="font-semibold">Genre:</span> {viewMovie.genre}</div>
+                    <div><span className="font-semibold">Duration:</span> {viewMovie.durasi} minutes</div>
+                    <div><span className="font-semibold">Production:</span> {viewMovie.produksi}</div>
+                  </div>
+                  <div className="mt-4">
+                    <span className="font-semibold">Schedule:</span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {viewMovie.jadwal.map(time => (
+                        <span key={time} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                          {time}:00
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-4">
+                <span className="font-semibold">Synopsis:</span>
+                <p className="mt-2 text-gray-700">{viewMovie.synopsys}</p>
+              </div>
+              <button
+                onClick={this.handleCloseViewModal}
+                className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       );
-    });
-  };
-
-  renderEditCheckbox = indexedit => {
-    var indexarr = [];
-    var datafilmedit = this.state.dataFilm[indexedit].jadwal;
-    // datafilmedit.forEach((val)=>{
-    //   indexarr.push(this.state.jadwal.indexOf(val))
-    // })
-    for (var i = 0; i < datafilmedit.length; i++) {
-      for (var j = 0; j < this.state.jadwal.length; j++) {
-        if (datafilmedit[i] === this.state.jadwal[j]) {
-          indexarr.push(j);
-        }
-      }
     }
-    // console.log(this.state.jadwal.indexOf(datafilmedit[2]));
-    var checkbox = this.state.jadwal;
-    var checkboxnew = [];
-    checkbox.forEach(val => {
-      checkboxnew.push({ jam: val, tampiledit: false });
-    });
-    indexarr.forEach(val => {
-      checkboxnew[val].tampiledit = true;
-    });
-    return checkboxnew.map((val, index) => {
-      if (val.tampiledit) {
-        return (
-          <div key={index}>
-            <input type="checkbox" defaultChecked ref={`editjadwal ${index}`} value={val.jam} />
-            <span className="mr-2">{val.jam}.00</span>
+
+    const isEdit = type === 'edit' && modaledit;
+    const isAdd = type === 'add' && modaladd;
+
+    if (!isEdit && !isAdd) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className={`${isEdit ? 'bg-blue-600' : 'bg-green-600'} text-white p-6 rounded-t-lg`}>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold">
+                {isEdit ? 'Edit Movie' : 'Add New Movie'}
+              </h3>
+              <button
+                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                className="text-white hover:text-gray-200"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
           </div>
-        );
-      } else {
-        return (
-          <div key={index}>
-            <input type="checkbox" ref={`editjadwal ${index}`} value={val.jam} />
-            <span className="mr-2">{val.jam}.00</span>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => this.handleInputChange('title', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter movie title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                <input
+                  type="text"
+                  value={formData.image}
+                  onChange={(e) => this.handleInputChange('image', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter image URL"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Synopsis</label>
+                <textarea
+                  value={formData.synopsys}
+                  onChange={(e) => this.handleInputChange('synopsys', e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter movie synopsis"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Director</label>
+                <input
+                  type="text"
+                  value={formData.sutradara}
+                  onChange={(e) => this.handleInputChange('sutradara', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter director name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
+                <input
+                  type="text"
+                  value={formData.genre}
+                  onChange={(e) => this.handleInputChange('genre', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter movie genre"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                <input
+                  type="number"
+                  value={formData.durasi}
+                  onChange={(e) => this.handleInputChange('durasi', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter duration"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Production</label>
+                <input
+                  type="text"
+                  value={formData.produksi}
+                  onChange={(e) => this.handleInputChange('produksi', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter production company"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Trailer URL</label>
+                <input
+                  type="text"
+                  value={formData.trailer}
+                  onChange={(e) => this.handleInputChange('trailer', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter trailer URL"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Studio</label>
+                <select
+                  value={formData.studioId}
+                  onChange={(e) => this.handleInputChange('studioId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Studio</option>
+                  {datastudio.map(studio => (
+                    <option key={studio.id} value={studio.id}>{studio.nama}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
+                {this.renderScheduleCheckboxes()}
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={isEdit ? this.onUpdateDataClick : this.onSaveDataClick}
+                className={`flex-1 ${isEdit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white py-2 px-4 rounded-lg transition-colors`}
+              >
+                {isEdit ? 'Save Changes' : 'Add Movie'}
+              </button>
+            </div>
           </div>
-        );
-      }
-    });
+        </div>
+      </div>
+    );
   };
 
   render() {
     if (this.props.role !== "admin") {
-      return <div>Error</div>;
+      return <Navigate to="/" replace />;
     }
-    const { dataFilm, indexedit } = this.state;
-    const { length } = dataFilm;
-    if (length === 0) {
-      return (
-        <div>
-          <Spinner animation="grow" size="xl" />
-          <Spinner animation="grow" />
-        </div>
-      );
-    }
+
+    const { dataFilm, loading } = this.state;
+
     return (
-      <div className="mx-3">
-        <Modal isOpen={this.state.modaladd} toggle={() => this.setState({ modaladd: false })}>
-          <ModalHeader>Tambah Film</ModalHeader>
-          <ModalBody>
-            <input type="text" ref="title" placeholder="title" className="form-control mb-3" />
-            <input type="text" ref="image" placeholder="image" className="form-control mb-3" />
-            <textarea rows="5" type="text" ref="synopsys" placeholder="sinopsis" className="form-control mb-3" />
-            Jadwal:
-            <div className="d-flex">{this.renderAddCheckbox()}</div>
-            <input type="text" ref="trailer" placeholder="trailer" className="form-control mb-3" />
-            <select ref="studioId">
-              {this.state.datastudio.map(val => {
-                return <option value={val.id}>{val.nama}</option>;
-              })}
-            </select>
-            <input type="text" ref="sutradara" placeholder="sutradara" className="form-control mb-3" />
-            <input type="number" ref="durasi" placeholder="durasi" className="form-control mb-3" />
-            <input type="text" ref="genre" placeholder="genre" className="form-control mb-3" />
-            <input type="text" ref="produksi" placeholder="produksi" className="form-control mb-3" />
-          </ModalBody>
-          <ModalFooter>
-            <button onClick={this.onSaveDataClick} className="btn btn-success">
-              Save
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                <FaFilm className="inline mr-3 text-purple-600" />
+                Manage Movies
+              </h1>
+              <p className="text-gray-600">Manage cinema movies and showtimes</p>
+            </div>
+            <button
+              onClick={this.handleShowAddModal}
+              className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 transform hover:scale-105 shadow-lg"
+            >
+              <FaPlus className="mr-2" />
+              Add New Movie
             </button>
-            <button onClick={() => this.setState({ modaladd: false })} className="btn btn-danger">
-              Cancel
-            </button>
-          </ModalFooter>
-        </Modal>
+          </div>
 
-        <Modal isOpen={this.state.modaledit} toggle={() => this.setState({ modaledit: false })}>
-          <ModalHeader>Edit Film {dataFilm[indexedit].title}</ModalHeader>
-          <ModalBody>
-            <input type="text" defaultValue={dataFilm[indexedit].title} ref="edittitle" placeholder="title" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].image} ref="editimage" placeholder="image" className="form-control mb-3" />
-            <textarea rows="5" type="text" defaultValue={dataFilm[indexedit].synopsys} ref="editsynopsys" placeholder="sinopsis" className="form-control mb-3" />
-            Jadwal:
-            <div className="d-flex">{this.renderEditCheckbox(indexedit)}</div>
-            <input ref="edittrailer" defaultValue={dataFilm[indexedit].trailer} placeholder="trailer" className="form-control mb-3 mt-3" />
-            Studio :
-            <select ref="studio">
-              {this.state.datastudio.map(val => {
-                return <option value={val.id}>{val.nama}</option>;
-              })}
-            </select>
-            <input type="text" defaultValue={dataFilm[indexedit].sutradara} ref="editsutradara" placeholder="sutradara" className="form-control mb-3 mt-3" />
-            <input type="number" defaultValue={dataFilm[indexedit].durasi} ref="editdurasi" placeholder="durasi" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].genre} ref="editgenre" placeholder="genre" className="form-control mb-3" />
-            <input type="text" defaultValue={dataFilm[indexedit].produksi} ref="editproduksi" placeholder="produksi" className="form-control mb-3" />
-          </ModalBody>
-          <ModalFooter>
-            <button onClick={this.onUpdateDataClick} className="btn btn-success">
-              Save
-            </button>
-            <button onClick={() => this.setState({ modaledit: false })} className="btn btn-danger">
-              Cancel
-            </button>
-          </ModalFooter>
-        </Modal>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-purple-600 mb-2">
+                {dataFilm.length}
+              </div>
+              <div className="text-gray-600">Total Movies</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {dataFilm.reduce((total, movie) => total + (movie.jadwal?.length || 0), 0)}
+              </div>
+              <div className="text-gray-600">Total Showtimes</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {new Set(dataFilm.map(movie => movie.genre)).size}
+              </div>
+              <div className="text-gray-600">Genres</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-orange-600 mb-2">
+                {dataFilm.length > 0 ? Math.round(dataFilm.reduce((total, movie) => total + (parseInt(movie.durasi) || 0), 0) / dataFilm.length) : 0}
+              </div>
+              <div className="text-gray-600">Avg Duration (min)</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-red-600 mb-2">
+                {this.state.datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0)}
+              </div>
+              <div className="text-gray-600">Total Seats</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="text-3xl font-bold text-indigo-600 mb-2">
+                {this.state.datastudio.length > 0 ? Math.round(this.state.datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0) / this.state.datastudio.length) : 0}
+              </div>
+              <div className="text-gray-600">Avg Seats/Studio</div>
+            </div>
+          </div>
 
-        <Fade>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>No.</TableCell>
-                <TableCell>Judul</TableCell>
-                <TableCell>Image.</TableCell>
-                <TableCell>Sinopsis</TableCell>
-                <TableCell>Jadwal Tayang</TableCell>
-                <TableCell>Sutradara</TableCell>
-                <TableCell>Genre</TableCell>
-                <TableCell>Durasi</TableCell>
-                <TableCell>Produksi</TableCell>
-                <TableCell>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>{this.renderMovie()}</TableBody>
-          </Table>
-        </Fade>
-        <center>
-          <button
-            style={{ alignContent: "start" }}
-            className="btn btn-dark mt-5 mb-5"
-            onClick={() => {
-              this.setState({ modaladd: true });
-            }}
-          >
-            Add film
-          </button>
-        </center>
+          {/* Content */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading movies...</p>
+            </div>
+          ) : dataFilm.length === 0 ? (
+            <div className="text-center py-12">
+              <FaFilm className="mx-auto text-6xl text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No movies found</h3>
+              <p className="text-gray-500 mb-6">Add your first movie to get started.</p>
+              <button
+                onClick={this.handleShowAddModal}
+                className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <FaPlus className="mr-2" />
+                Add First Movie
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {this.renderMovieCards()}
+            </div>
+          )}
+
+          {/* Modals */}
+          {this.renderModal('add')}
+          {this.renderModal('edit')}
+          {this.renderModal('view')}
+        </div>
       </div>
     );
   }

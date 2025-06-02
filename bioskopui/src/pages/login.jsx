@@ -1,72 +1,128 @@
 import React, { Component } from "react";
-import { Link, Redirect } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { LoginSuccessAction, Loginthunk, Login_error } from "./../redux/actions";
-import Loader from "react-loader-spinner";
-// import Axios from 'axios';
-// import { APIURL } from '../support/ApiUrl';
-// import RegisterUser from './RegisterUser'
+import { Puff } from "react-loader-spinner";
+import { FaUser, FaLock, FaSignInAlt } from "react-icons/fa";
 
 class Login extends Component {
-  state = {
-    // error:'',
-    // loading:false
-  };
+  // state = {}; // No local state needed if refs are used for form inputs
 
   onLoginClick = () => {
-    var username = this.refs.username.value;
-    var password = this.refs.password.value;
+    const username = this.usernameRef.value;
+    const password = this.passwordRef.value;
     this.props.Loginthunk(username, password);
-    // this.setState({loading:true})
-    // Axios.get(`${APIURL}users?username=${username}&password=${password}`)
-    // .then(res=>{
-    //     if(res.data.length){
-    //         localStorage.setItem('fakhran',res.data[0].id)
-    //         this.props.LoginSuccessAction(res.data[0])
-    //     }else{
-    //         this.setState({error:'password salah'})
-    //     }
-    //     this.setState({loading:false})
-    // }).catch((err)=>{
-    //     console.log(err)
-    //     this.setState({loading:true})
-    // })
   };
 
   render() {
     if (this.props.AuthLog) {
-      return <Redirect to={"/"} />;
+      return <Navigate to="/" replace />;
     }
     return (
-      <div style={{ height: "300vh", backgroundColor: "" }}>
-        <div className="d-flex justify-content-center">
-          <div style={{ width: "500px", border: "1px solid black" }} className="rounded p-2">
-            <h1 className>Login</h1>
-            <div className="p-1" style={{ borderBottom: "1px solid black" }}>
-              <input type="text" className="username" style={{ border: "transparent", width: "100%", fontSize: "20px" }} ref="username" placeholder="username " />
-            </div>
-            <div className="p-1" style={{ borderBottom: "1px solid black" }}>
-              <input type="password" className="username" style={{ border: "transparent", width: "100%", fontSize: "20px" }} ref="password" placeholder="password" />
-            </div>
-            {this.props.Auth.error === "" ? null : (
-              <div className="alert alert-danger mt-2">
-                {this.props.Auth.error}{" "}
-                <span onClick={this.props.Login_error} className="float-right font-weight-bold salah">
-                  X
-                </span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+              <FaSignInAlt className="inline-block mr-3 text-blue-600" />
+              Welcome Back
+            </h2>
+            <p className="text-gray-600">Sign in to your account</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <form className="space-y-6">
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    ref={ref => (this.usernameRef = ref)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                  />
+                </div>
               </div>
-            )}
-            <div className="mt-4 ">
-              {this.props.Auth.loading ? (
-                <Loader type="puff" color="#00BFFF" height={100} width={100} />
-              ) : (
-                <button className="btn btn-primary" onClick={this.onLoginClick}>
-                  Login
-                </button>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    ref={ref => (this.passwordRef = ref)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                  />
+                </div>
+              </div>
+
+              {this.props.Auth.error && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800">{this.props.Auth.error}</p>
+                    </div>
+                    <div className="ml-auto pl-3">
+                      <button
+                        type="button"
+                        onClick={this.props.Login_error}
+                        className="inline-flex text-red-400 hover:text-red-600"
+                      >
+                        <span className="sr-only">Dismiss</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
-            <div className="mt-2">
-              belum ada akun ?<Link to={"/RegisterUser"}> Register </Link>
+
+              <div>
+                {this.props.Auth.loading ? (
+                  <div className="flex justify-center items-center py-3">
+                    <Puff color="#3b82f6" height={40} width={40} />
+                    <span className="ml-3 text-gray-600">Signing in...</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={this.onLoginClick}
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:scale-105"
+                  >
+                    <FaSignInAlt className="mr-2" />
+                    Sign In
+                  </button>
+                )}
+              </div>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link
+                  to="/RegisterUser"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition duration-150 ease-in-out"
+                >
+                  Register here
+                </Link>
+              </p>
             </div>
           </div>
         </div>
@@ -78,7 +134,7 @@ class Login extends Component {
 const MapstateToprops = state => {
   return {
     AuthLog: state.Auth.login,
-    Auth: state.Auth
+    Auth: state.Auth // Contains error and loading state
   };
 };
 

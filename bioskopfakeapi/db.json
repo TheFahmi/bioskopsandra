@@ -1,19 +1,19 @@
 {
   "users": [
     {
-      "id": 1,
+      "id": "1",
       "username": "admin",
       "password": "admin",
       "role": "admin"
     },
     {
-      "id": 2,
+      "id": "2",
       "username": "dobleh",
       "password": "qwe",
       "role": "user"
     },
     {
-      "id": 3,
+      "id": "3",
       "username": "jamal",
       "password": "1234",
       "role": "user"
@@ -22,57 +22,57 @@
       "username": "fakhran",
       "password": "1234",
       "role": "user",
-      "id": 4
+      "id": "4"
     },
     {
       "username": "bobi1",
       "password": "123",
       "role": "user",
-      "id": 5
+      "id": "5"
     },
     {
       "username": "fakhran1",
       "password": "123",
       "role": "user",
-      "id": 6
+      "id": "6"
     },
     {
       "username": "jaki",
       "password": "123",
       "role": "user",
-      "id": 7
+      "id": "7"
     }
   ],
   "studios": [
     {
-      "id": 1,
+      "id": "1",
       "nama": "studio 1",
       "jumlahKursi": 260
     },
     {
-      "id": 2,
+      "id": "2",
       "nama": "studio 2",
       "jumlahKursi": 240
     },
     {
-      "id": 3,
+      "id": "3",
       "nama": "studio 3",
       "jumlahKursi": 200
     },
     {
       "nama": "studio 5",
-      "jumlahKursi": "123",
-      "id": 4
+      "jumlahKursi": 123,
+      "id": "4"
     },
     {
       "nama": "studio 4",
-      "jumlahKursi": "200",
-      "id": 5
+      "jumlahKursi": 200,
+      "id": "5"
     }
   ],
   "movies": [
     {
-      "id": 1,
+      "id": "1",
       "title": "Jumanji: The Next Level",
       "sutradara": "Jake Kashdan",
       "durasi": 121,
@@ -89,7 +89,25 @@
       "produksi": "Columbia Pictures"
     },
     {
-      "id": 3,
+      "id": "2",
+      "title": "Spider-Man: No Way Home",
+      "sutradara": "Jon Watts",
+      "durasi": 148,
+      "jadwal": [
+        10,
+        13,
+        16,
+        19
+      ],
+      "synopsys": "Peter Parker's secret identity is revealed to the entire world. Desperate for help, Peter turns to Doctor Strange to make the world forget that he is Spider-Man. The spell goes horribly wrong and shatters the multiverse, bringing in villains from other Spider-Man films.",
+      "image": "https://media.21cineplex.com/webcontent/gallery/pictures/163562172935181_287x421.jpg",
+      "genre": "Action",
+      "studioId": "1",
+      "trailer": "https://www.youtube.com/embed/JfVOs4VSpmA",
+      "produksi": "Columbia Pictures, Marvel Studios"
+    },
+    {
+      "id": "3",
       "title": "Ip Man 4: The Finale",
       "sutradara": "Wilson Yip",
       "durasi": 121,
@@ -111,7 +129,7 @@
       "synopsys": "Dalam kisah Doraemon kali ini, bersama Nobita, Shizuka, Gian, dan Suneo mereka memulai petualangan di Laut Karibia. Nobita adalah kapten kapal dan bertarung melawan musuhnya di atas kapal.\n\nSaat Shizuka diculik, dan badai menghambat perjalanan mereka. Mini-Dora membantu Nobita dan teman-teman. Dalam petualangan kali ini mereka menemukan sebuah pulau harta karun. Namun belakangan mereka menyadari itu bukanlah pulau biasa.",
       "sutradara": "Kazuaki Imai",
       "genre": "Fantasy",
-      "durasi": "120",
+      "durasi": 120,
       "jadwal": [
         12,
         14,
@@ -120,12 +138,12 @@
       "produksi": "Shin Ei Animation",
       "trailer": "https://www.youtube.com/embed/4TXbUvMHijc",
       "studioId": "1",
-      "id": 4
+      "id": "4"
     }
   ],
   "orders": [
     {
-      "id": 1,
+      "id": "1",
       "userId": 2,
       "movieId": 3,
       "jadwal": 12,
@@ -137,15 +155,15 @@
       "movieId": 3,
       "jadwal": 12,
       "totalHarga": 50000,
-      "id": 2,
-      "bayar": false
+      "id": "2",
+      "bayar": true
     },
     {
       "userId": 2,
       "movieId": 3,
       "jadwal": 14,
       "totalHarga": 5000,
-      "id": 3,
+      "id": "3",
       "bayar": false
     },
     {
@@ -154,7 +172,7 @@
       "totalharga": 25000,
       "jadwal": 12,
       "bayar": false,
-      "id": 9
+      "id": "9"
     },
     {
       "userId": 7,
@@ -162,7 +180,7 @@
       "totalharga": 25000,
       "jadwal": 12,
       "bayar": false,
-      "id": 11
+      "id": "11"
     },
     {
       "userId": 7,
@@ -170,7 +188,7 @@
       "totalharga": 25000,
       "jadwal": 12,
       "bayar": false,
-      "id": 12
+      "id": "12"
     },
     {
       "userId": 6,
@@ -178,7 +196,45 @@
       "totalharga": 75000,
       "jadwal": 12,
       "bayar": false,
-      "id": 13
+      "id": "13"
+    },
+    {
+      "id": "c64b",
+      "userId": "3",
+      "movieId": "1",
+      "totalharga": 125000,
+      "jadwal": 9,
+      "bayar": true
+    },
+    {
+      "id": "0659",
+      "userId": "3",
+      "movieId": "1",
+      "totalharga": 25000,
+      "jadwal": 9,
+      "bayar": true
+    },
+    {
+      "id": "cf7c",
+      "userId": "3",
+      "movieId": "1",
+      "totalharga": 25000,
+      "jadwal": 9,
+      "bayar": true
+    },
+    {
+      "id": "2003",
+      "userId": "3",
+      "movieId": "3",
+      "totalharga": 25000,
+      "jadwal": 12,
+      "bayar": true,
+      "customerName": "Test",
+      "customerEmail": "test@test.com",
+      "customerPhone": "0821212121",
+      "paymentMethod": "bank_transfer",
+      "orderDate": "2025-06-02T08:07:24.943Z",
+      "status": "confirmed"
     }
   ],
   "ordersDetails": [
@@ -186,43 +242,65 @@
       "orderId": 9,
       "seat": 18,
       "row": 0,
-      "id": 10
+      "id": "10"
     },
     {
       "orderId": 11,
       "seat": 17,
       "row": 0,
-      "id": 12
+      "id": "12"
     },
     {
       "orderId": 12,
       "seat": 19,
       "row": 0,
-      "id": 13
+      "id": "13"
     },
     {
       "orderId": 13,
       "seat": 10,
       "row": 2,
-      "id": 14
+      "id": "14"
     },
     {
       "orderId": 13,
       "seat": 11,
       "row": 2,
-      "id": 15
+      "id": "15"
     },
     {
       "orderId": 13,
       "seat": 12,
       "row": 2,
-      "id": 16
+      "id": "16"
+    },
+    {
+      "id": "05e5",
+      "orderId": "0659",
+      "seat": 0,
+      "row": 11
+    },
+    {
+      "id": "47e7",
+      "orderId": "cf7c",
+      "seat": 2,
+      "row": 11
+    },
+    {
+      "id": "e198",
+      "orderId": "2003",
+      "seat": 16,
+      "row": 0
     }
   ],
   "transaction": [
-    {}
+    {
+      "id": "f70a"
+    }
   ],
   "transactionsDetails": [
-    {}
+    {
+      "id": "a023"
+    }
   ]
 }

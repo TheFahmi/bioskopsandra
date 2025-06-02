@@ -1,11 +1,11 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
 import Swal from "sweetalert2";
 import { connect } from "react-redux";
 import { gantiPassword } from "./../redux/actions";
-
+import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
 
 class Gantipass extends Component {
   state = {
@@ -13,97 +13,116 @@ class Gantipass extends Component {
   };
 
   onClickgantipass = () => {
-    var passwordbaru = this.refs.passwordbaru.value;
-    var passwordlama = this.refs.passwordlama.value;
-    var password = this.refs.confirmpass.value;
+    const passwordbaru = this.passwordBaruRef.value;
+    const passwordlama = this.passwordLamaRef.value;
+    const confirmPassword = this.confirmPassRef.value;
 
-    var updatepassword = {
-      username: this.props.username,
-      password,
-      role: this.props.role
-    };
+    const { username, role, userId, passuser } = this.props;
 
-    if (passwordlama === "" || passwordbaru === "" || password === "") {
+    if (passwordlama === "" || passwordbaru === "" || confirmPassword === "") {
       Swal.fire({
         icon: "error",
-        title: "Gagal",
-        text: "Password tidak boleh kosong"
+        title: "Failed",
+        text: "All password fields must be filled."
       });
-    } else if (passwordlama == passwordbaru) {
+    } else if (passwordlama === passwordbaru) {
       Swal.fire({
         icon: "error",
-        title: "Gagal",
-        text: "Password baru tidak boleh sama dengan password lama"
+        title: "Failed",
+        text: "New password cannot be the same as the old password."
       });
-    } else if (passwordlama !== this.props.passuser) {
+    } else if (passwordlama !== passuser) {
       Swal.fire({
         icon: "error",
-        title: "Gagal",
-        text: "Password lama salah"
+        title: "Failed",
+        text: "Old password is incorrect."
       });
-    } else if (passwordbaru !== password) {
+    } else if (passwordbaru !== confirmPassword) {
       Swal.fire({
         icon: "error",
-        title: "Gagal",
-        text: "konfirmasi password salah"
+        title: "Failed",
+        text: "New password confirmation does not match."
       });
     } else {
-      Axios.patch(`${APIURL}users/${this.props.userId}`, updatepassword)
-        .then(res => {
-          Swal.fire({
-            title: "Yakin ganti password?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            cancelButtonText: "No",
-            confirmButtonText: "Yes"
-          }).then(result => {
-            if (result.value) {
-              this.props.gantiPassword(res.data);
+      const updatedPasswordData = {
+        username, // username and role are usually not needed for password change if userId is key
+        password: passwordbaru, // send the new password
+        role
+      };
+      Swal.fire({
+        title: "Are you sure you want to change your password?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        cancelButtonText: "No",
+        confirmButtonText: "Yes"
+      }).then(result => {
+        if (result.value) {
+          Axios.patch(`${APIURL}users/${userId}`, updatedPasswordData)
+            .then(res => {
+              this.props.gantiPassword(res.data); // Update Redux state with the new user data (which includes new pass)
               this.setState({ backtohome: true });
               Swal.fire({
                 icon: "success",
-                title: "Password berhasil diganti",
+                title: "Password Changed!",
+                text: "Your password has been successfully updated.",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 2000
               });
-            }
-          });
-        })
-        .catch(err => {
-          console.log(err);
-        });
+            })
+            .catch(err => {
+               // console.log(err);
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "An error occurred while changing the password."
+              });
+            });
+        }
+      });
     }
   };
 
   render() {
-    if (this.state.backtohome || this.props.loginuser==false) {
-      return <Redirect to="/" />;
+    if (this.state.backtohome || !this.props.loginuser) { // Corrected logic for !this.props.loginuser
+      return <Navigate to="/" replace />;
     }
 
     return (
-      <div style={{ height: "90vh" }}>
-        <div className="container borderregis" style={{ width: "20%" }}>
-          <h1>Ganti Password</h1>
-          <div>
-            <label>Password Lama</label>
-            <input className="form-control" type="password" placeholder="Password" ref="passwordlama" />
-          </div>
-          <div>
-            <label>Password Baru</label>
-            <input className="form-control" type="password" placeholder="Password" ref="passwordbaru" />
-          </div>
-          <div>
-            <label>Re-enter Password</label>
-            <input className="form-control" type="password" placeholder="Re-enter" ref="confirmpass" />
-          </div>
+      <Container className="mt-5">
+        <Row className="justify-content-md-center">
+          <Col md={6} lg={5}>
+            <Card className="p-4 shadow-sm">
+              <Card.Body>
+                <h2 className="text-center mb-4">Change Password</h2>
+                <Form>
+                  <Form.Group className="mb-3" controlId="formOldPassword">
+                    <Form.Label>Old Password</Form.Label>
+                    <Form.Control type="password" placeholder="Enter old password" ref={ref => (this.passwordLamaRef = ref)} />
+                  </Form.Group>
 
-          <button onClick={this.onClickgantipass} className="btn btn-dark mt-4 mb-3" type="submit">
-            Submit
-          </button>
-        </div>
-      </div>
+                  <Form.Group className="mb-3" controlId="formNewPassword">
+                    <Form.Label>New Password</Form.Label>
+                    <Form.Control type="password" placeholder="Enter new password" ref={ref => (this.passwordBaruRef = ref)} />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3" controlId="formConfirmNewPassword">
+                    <Form.Label>Confirm New Password</Form.Label>
+                    <Form.Control type="password" placeholder="Re-enter new password" ref={ref => (this.confirmPassRef = ref)} />
+                  </Form.Group>
+
+                  <div className="d-grid mt-4">
+                    <Button variant="primary" onClick={this.onClickgantipass} size="lg">
+                      Update Password
+                    </Button>
+                  </div>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     );
   }
 }
@@ -112,7 +131,7 @@ const MapstateToprops = state => {
     username: state.Auth.username,
     loginuser: state.Auth.login,
     userId: state.Auth.id,
-    passuser: state.Auth.password,
+    passuser: state.Auth.password, // Assuming this is the current password stored in Redux
     role: state.Auth.role
   };
 };
