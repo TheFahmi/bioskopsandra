@@ -26,27 +26,23 @@ export const Loginthunk = (username, password) => {
     dispatch({ type: "LOGIN_LOADING" });
     Axios.get(`${APIURL}users?username=${username}&password=${password}`)
       .then(res => {
-        // console.log(res.data);
-        if (res.data.length) {
-          window.location.reload();
-          localStorage.setItem("fakhran", res.data[0].id);
-          dispatch(LoginSuccessAction(res.data[0]));
+        if (res.data.length > 0) {
+          const userData = res.data[0];
+          localStorage.setItem("fakhran", userData.id);
+          dispatch(LoginSuccessAction(userData));
         } else {
-          dispatch({ type: "LOGIN_ERROR", payload: "Salah masukkin Password" });
+          dispatch({ type: "LOGIN_ERROR", payload: "Username atau password salah" });
         }
       })
       .catch(err => {
-        // console.log(err);
-        dispatch({ type: "LOGIN_ERROR", payload: "server error" });
+        dispatch({ type: "LOGIN_ERROR", payload: "Terjadi kesalahan server" });
       });
   };
 };
 
 export const Login_error = () => {
   return dispatch => {
-    return dispatch => {
-      dispatch({ type: "LOGIN_ERROR", payload: "" });
-    };
+    dispatch({ type: "LOGIN_ERROR", payload: "" });
   };
 };
 

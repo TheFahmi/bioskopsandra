@@ -2,21 +2,23 @@ import React, { Component } from "react";
 import Header from "./components/header";
 import "./App.css";
 import Home from "./pages/Home";
-import { Switch, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import ManageAdmin from "./pages/manageAdmin";
 import Login from "./pages/login";
 import Axios from "axios";
 import { APIURL } from "./support/ApiUrl";
 import Slider from "./components/slider";
 import RegisterUser from "./pages/RegisterUser";
-import WelcomePages from "./components/welcomePages";
+
 import Moviedetail from "./pages/movie-detail";
 import Belitiket from "./pages/belitiket";
 import { connect } from "react-redux";
 import { LoginSuccessAction, NotifCart } from "./redux/actions";
 import Cart from "./pages/cart";
 import Gantipass from "./pages/gantipassword";
-import manageStudio from './pages/manageStudio'
+import ManageStudio from './pages/manageStudio';
+import Orders from "./pages/orders";
+import Transactions from "./pages/transactions";
 
 class App extends Component {
   state = {
@@ -61,23 +63,24 @@ class App extends Component {
     return (
       <div className="App">
         <Header />
-        <Switch>
-          <Route path={"/"} exact>
-            <Slider />
-            <Home />
-            <WelcomePages />
-          </Route>
-          <Route exact path={"/manageAdmin"}>
-            <ManageAdmin />
-          </Route>
-          <Route path="/moviedetail/:id" component={Moviedetail} exact />
-          <Route path="/belitiket" component={Belitiket}></Route>
-          <Route path={"/login"} exact component={Login} />
-          <Route path={"/RegisterUser"} exact component={RegisterUser} />
-          <Route path={"/cart"} component={Cart} exact />
-          <Route path="/gantipassword" component={Gantipass} exact/>
-          <Route path="/manageStudio" component={manageStudio} exact/>
-        </Switch>
+        <Routes>
+          <Route path="/" element={
+            <>
+              <Slider />
+              <Home />
+            </>
+          } />
+          <Route path="/manageAdmin" element={<ManageAdmin />} />
+          <Route path="/moviedetail/:id" element={<Moviedetail />} />
+          <Route path="/belitiket" element={<Belitiket />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/RegisterUser" element={<RegisterUser />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/gantipassword" element={<Gantipass />} />
+          <Route path="/manageStudio" element={<ManageStudio />} />
+        </Routes>
       </div>
     );
   }

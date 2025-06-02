@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
 import Swal from "sweetalert2";
@@ -86,7 +86,7 @@ class Gantipass extends Component {
 
   render() {
     if (this.state.backtohome || !this.props.loginuser) { // Corrected logic for !this.props.loginuser
-      return <Redirect to="/" />;
+      return <Navigate to="/" replace />;
     }
 
     return (
