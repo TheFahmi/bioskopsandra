@@ -1,23 +1,23 @@
-import React, { Component } from "react";
+import React, { useRef } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { LoginSuccessAction, Loginthunk, Login_error } from "./../redux/actions";
 import { Puff } from "react-loader-spinner";
 import { FaUser, FaLock, FaSignInAlt } from "react-icons/fa";
 
-class Login extends Component {
-  // state = {}; // No local state needed if refs are used for form inputs
+const Login = (props) => {
+  const usernameRef = useRef(null);
+  const passwordRef = useRef(null);
 
-  onLoginClick = () => {
-    const username = this.usernameRef.value;
-    const password = this.passwordRef.value;
-    this.props.Loginthunk(username, password);
+  const onLoginClick = () => {
+    const username = usernameRef.current.value;
+    const password = passwordRef.current.value;
+    props.Loginthunk(username, password);
   };
 
-  render() {
-    if (this.props.AuthLog) {
-      return <Navigate to="/" replace />;
-    }
+  if (props.AuthLog) {
+    return <Navigate to="/" replace />;
+  }
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
@@ -43,7 +43,7 @@ class Login extends Component {
                     id="username"
                     type="text"
                     placeholder="Enter your username"
-                    ref={ref => (this.usernameRef = ref)}
+                    ref={usernameRef}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
                   />
                 </div>
@@ -61,13 +61,13 @@ class Login extends Component {
                     id="password"
                     type="password"
                     placeholder="Enter your password"
-                    ref={ref => (this.passwordRef = ref)}
+                    ref={passwordRef}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
                   />
                 </div>
               </div>
 
-              {this.props.Auth.error && (
+              {props.Auth.error && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
@@ -76,12 +76,12 @@ class Login extends Component {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-red-800">{this.props.Auth.error}</p>
+                      <p className="text-sm text-red-800">{props.Auth.error}</p>
                     </div>
                     <div className="ml-auto pl-3">
                       <button
                         type="button"
-                        onClick={this.props.Login_error}
+                        onClick={props.Login_error}
                         className="inline-flex text-red-400 hover:text-red-600"
                       >
                         <span className="sr-only">Dismiss</span>
@@ -95,7 +95,7 @@ class Login extends Component {
               )}
 
               <div>
-                {this.props.Auth.loading ? (
+                {props.Auth.loading ? (
                   <div className="flex justify-center items-center py-3">
                     <Puff color="#3b82f6" height={40} width={40} />
                     <span className="ml-3 text-gray-600">Signing in...</span>
@@ -103,7 +103,7 @@ class Login extends Component {
                 ) : (
                   <button
                     type="button"
-                    onClick={this.onLoginClick}
+                    onClick={onLoginClick}
                     className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:scale-105"
                   >
                     <FaSignInAlt className="mr-2" />
@@ -128,8 +128,7 @@ class Login extends Component {
         </div>
       </div>
     );
-  }
-}
+};
 
 const MapstateToprops = state => {
   return {

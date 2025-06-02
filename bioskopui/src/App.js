@@ -1,90 +1,151 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { connect } from "react-redux";
+import Axios from "axios";
 import Header from "./components/header";
+import Footer from "./components/Footer";
 import "./App.css";
 import Home from "./pages/Home";
-import { Routes, Route } from "react-router-dom";
-import ManageAdmin from "./pages/manageAdmin";
-import Login from "./pages/login";
-import Axios from "axios";
+import ManageMovies from "./pages/ManageMovies";
+import Login from "./pages/Login";
 import { APIURL } from "./support/ApiUrl";
 import Slider from "./components/slider";
 import RegisterUser from "./pages/RegisterUser";
-
-import Moviedetail from "./pages/movie-detail";
-import Belitiket from "./pages/belitiket";
-import { connect } from "react-redux";
+import WelcomePages from "./components/welcomePages";
+import MovieDetail from "./pages/MovieDetail";
+import BuyTicket from "./pages/BuyTicket";
 import { LoginSuccessAction, NotifCart } from "./redux/actions";
-import Cart from "./pages/cart";
-import Gantipass from "./pages/gantipassword";
-import ManageStudio from './pages/manageStudio';
-import Orders from "./pages/orders";
-import Transactions from "./pages/transactions";
+import Cart from "./pages/Cart";
+import ChangePassword from "./pages/ChangePassword";
+import ManageStudios from './pages/ManageStudios';
+import NotFound from './pages/NotFound';
+import Orders from "./pages/Orders";
+import Transactions from "./pages/Transactions";
 
-class App extends Component {
-  state = {
-    loading: true,
-    datacart: []
-  };
+const App = (props) => {
+  const [loading, setLoading] = useState(true);
+  const [datacart, setDatacart] = useState([]);
 
-  componentDidMount() {
-    var id = localStorage.getItem("fakhran");
+  useEffect(() => {
+    const id = localStorage.getItem("fakhran");
     Axios.get(`${APIURL}users/${id}`)
       .then(res => {
         // console.log(res.data);
-        this.props.LoginSuccessAction(res.data);
-        Axios.get(`${APIURL}orders?_expand=movie&userId=${this.props.userId}&bayar=false`)
+        props.LoginSuccessAction(res.data);
+        Axios.get(`${APIURL}orders?_expand=movie&userId=${props.userId}&bayar=false`)
           .then(res1 => {
-            var datacart = res1.data;
-            this.setState({
-              datacart: datacart,
-              loading: false
-            });
+            const datacart = res1.data;
+            setDatacart(datacart);
+            setLoading(false);
           })
           .catch(err => {
             // console.log(err);
           });
-        // this.setState({ loading: false });
+        // setLoading(false);
       })
       .catch(err => {
         // console.log(err);
       })
       .finally(() => {
-        this.setState({ loading: false });
+        setLoading(false);
       });
+  }, [props]);
+
+  useEffect(() => {
+    props.NotifCart(datacart.length);
+  }, [datacart, props]);
+
+  if (loading) {
+    return <div>Loading....</div>;
   }
 
-  render() {
-    if (this.state.loading) {
-      return <div>Loading....</div>;
-    }
-    {
-      this.props.NotifCart(this.state.datacart.length);
-    }
-    return (
-      <div className="App">
-        <Header />
-        <Routes>
-          <Route path="/" element={
-            <>
-              <Slider />
-              <Home />
-            </>
-          } />
-          <Route path="/manageAdmin" element={<ManageAdmin />} />
-          <Route path="/moviedetail/:id" element={<Moviedetail />} />
-          <Route path="/belitiket" element={<Belitiket />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/RegisterUser" element={<RegisterUser />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/gantipassword" element={<Gantipass />} />
-          <Route path="/manageStudio" element={<ManageStudio />} />
-        </Routes>
-      </div>
-    );
-  }
-}
+  return (
+    <div className="App">
+      <Routes>
+        <Route path="/" element={
+          <>
+            <Header />
+            <Slider />
+            <Home />
+            <WelcomePages />
+            <Footer />
+          </>
+        } />
+        <Route path="/manageAdmin" element={
+          <>
+            <Header />
+            <ManageMovies />
+            <Footer />
+          </>
+        } />
+        <Route path="/moviedetail/:id" element={
+          <>
+            <Header />
+            <MovieDetail />
+            <Footer />
+          </>
+        } />
+        <Route path="/belitiket" element={
+          <>
+            <Header />
+            <BuyTicket />
+            <Footer />
+          </>
+        } />
+        <Route path="/login" element={
+          <>
+            <Header />
+            <Login />
+            <Footer />
+          </>
+        } />
+        <Route path="/RegisterUser" element={
+          <>
+            <Header />
+            <RegisterUser />
+            <Footer />
+          </>
+        } />
+        <Route path="/cart" element={
+          <>
+            <Header />
+            <Cart />
+            <Footer />
+          </>
+        } />
+        <Route path="/orders" element={
+          <>
+            <Header />
+            <Orders />
+            <Footer />
+          </>
+        } />
+        <Route path="/transactions" element={
+          <>
+            <Header />
+            <Transactions />
+            <Footer />
+          </>
+        } />
+        <Route path="/gantipassword" element={
+          <>
+            <Header />
+            <ChangePassword />
+            <Footer />
+          </>
+        } />
+        <Route path="/manageStudio" element={
+          <>
+            <Header />
+            <ManageStudios />
+            <Footer />
+          </>
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+};
 
 const MapstateToprops = state => {
   return {

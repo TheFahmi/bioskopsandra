@@ -24,7 +24,7 @@ export const NotifCart = cart => {
 export const Loginthunk = (username, password) => {
   return dispatch => {
     dispatch({ type: "LOGIN_LOADING" });
-    Axios.get(`${APIURL}users?username=${username}&password=${password}`)
+    Axios.get(`${APIURL}/users?username=${username}&password=${password}`)
       .then(res => {
         if (res.data.length > 0) {
           const userData = res.data[0];

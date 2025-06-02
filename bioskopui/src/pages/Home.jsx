@@ -1,36 +1,32 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { FaPlay, FaClock, FaUser, FaStar, FaEye, FaCalendar } from "react-icons/fa";
 
 const API_URL = "http://localhost:2000";
 
-class Home extends Component {
-  state = {
-    dataMovies: [],
-    readMoreMap: {}, 
-    error: null // Added for API error handling
-  };
+const Home = () => {
+  const [dataMovies, setDataMovies] = useState([]);
+  const [readMoreMap, setReadMoreMap] = useState({});
+  const [error, setError] = useState(null);
 
-  toggleReadMore = (movieId) => {
-    this.setState(prevState => ({
-      readMoreMap: {
-        ...prevState.readMoreMap,
-        [movieId]: !prevState.readMoreMap[movieId]
-      }
+  const toggleReadMore = (movieId) => {
+    setReadMoreMap(prevState => ({
+      ...prevState,
+      [movieId]: !prevState[movieId]
     }));
   };
 
-  renderMovies = () => {
-    return this.state.dataMovies.map((movie) => {
-      const isReadMore = this.state.readMoreMap[movie.id];
+  const renderMovies = () => {
+    return dataMovies.map((movie) => {
+      const isReadMore = readMoreMap[movie.id];
       const synopsisToShow = isReadMore ? movie.synopsys : movie.synopsys.substring(0, 100) + (movie.synopsys.length > 100 ? "..." : "");
 
       return (
         <div key={movie.id} className="group relative bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
           {/* Movie Poster */}
           <div className="relative overflow-hidden">
-            <Link to={`/moviedetail/${movie.id}`}>
+            <Link to={`/movie-detail/${movie.id}`}>
               <img
                 src={movie.image}
                 alt={movie.title}
@@ -77,7 +73,7 @@ class Home extends Component {
             {/* Action Buttons */}
             <div className="flex space-x-2">
               <button
-                onClick={() => this.toggleReadMore(movie.id)}
+                onClick={() => toggleReadMore(movie.id)}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
               >
                 <FaEye className="inline mr-2" />
@@ -115,19 +111,20 @@ class Home extends Component {
     });
   };
 
-  componentDidMount() {
+  useEffect(() => {
     Axios.get(`${API_URL}/movies`)
       .then(res => {
-        this.setState({ dataMovies: res.data, error: null });
+        setDataMovies(res.data);
+        setError(null);
       })
       .catch(err => {
         // console.log(err);
-        this.setState({ error: "Failed to fetch movies. Please try again later.", dataMovies: [] });
+        setError("Failed to fetch movies. Please try again later.");
+        setDataMovies([]);
       });
-  }
+  }, []);
 
-  render() {
-    if (this.state.error) {
+  if (error) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-4">
@@ -138,7 +135,7 @@ class Home extends Component {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-800">{this.state.error}</p>
+                <p className="text-sm text-red-800">{error}</p>
               </div>
             </div>
           </div>
@@ -146,24 +143,24 @@ class Home extends Component {
       );
     }
 
-    return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100">{/* Removed min-h-screen since this is no longer the main hero */}
+  return (
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100">{/* Removed min-h-screen since this is no longer the main hero */}
 
-        {/* Movies Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Now Showing
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover the latest movies and book your tickets for an unforgettable experience
-            </p>
+      {/* Movies Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Now Showing
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover the latest movies and book your tickets for an unforgettable experience
+          </p>
+        </div>
+
+        {dataMovies.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {renderMovies()}
           </div>
-
-          {this.state.dataMovies.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {this.renderMovies()}
-            </div>
           ) : (
             <div className="text-center py-16">
               <div className="max-w-md mx-auto">
@@ -210,7 +207,6 @@ class Home extends Component {
         </div>
       </div>
     );
-  }
-}
+};
 
 export default Home;

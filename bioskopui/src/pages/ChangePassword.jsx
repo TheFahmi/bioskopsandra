@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
@@ -7,17 +7,18 @@ import { connect } from "react-redux";
 import { gantiPassword } from "./../redux/actions";
 import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
 
-class Gantipass extends Component {
-  state = {
-    backtohome: false
-  };
+const Gantipass = (props) => {
+  const [backtohome, setBacktohome] = useState(false);
+  const passwordBaruRef = useRef(null);
+  const passwordLamaRef = useRef(null);
+  const confirmPassRef = useRef(null);
 
-  onClickgantipass = () => {
-    const passwordbaru = this.passwordBaruRef.value;
-    const passwordlama = this.passwordLamaRef.value;
-    const confirmPassword = this.confirmPassRef.value;
+  const onClickgantipass = () => {
+    const passwordbaru = passwordBaruRef.current.value;
+    const passwordlama = passwordLamaRef.current.value;
+    const confirmPassword = confirmPassRef.current.value;
 
-    const { username, role, userId, passuser } = this.props;
+    const { username, role, userId, passuser } = props;
 
     if (passwordlama === "" || passwordbaru === "" || confirmPassword === "") {
       Swal.fire({
@@ -61,8 +62,8 @@ class Gantipass extends Component {
         if (result.value) {
           Axios.patch(`${APIURL}users/${userId}`, updatedPasswordData)
             .then(res => {
-              this.props.gantiPassword(res.data); // Update Redux state with the new user data (which includes new pass)
-              this.setState({ backtohome: true });
+              props.gantiPassword(res.data); // Update Redux state with the new user data (which includes new pass)
+              setBacktohome(true);
               Swal.fire({
                 icon: "success",
                 title: "Password Changed!",
@@ -84,10 +85,9 @@ class Gantipass extends Component {
     }
   };
 
-  render() {
-    if (this.state.backtohome || !this.props.loginuser) { // Corrected logic for !this.props.loginuser
-      return <Navigate to="/" replace />;
-    }
+  if (backtohome || !props.loginuser) { // Corrected logic for !props.loginuser
+    return <Navigate to="/" replace />;
+  }
 
     return (
       <Container className="mt-5">
@@ -99,21 +99,21 @@ class Gantipass extends Component {
                 <Form>
                   <Form.Group className="mb-3" controlId="formOldPassword">
                     <Form.Label>Old Password</Form.Label>
-                    <Form.Control type="password" placeholder="Enter old password" ref={ref => (this.passwordLamaRef = ref)} />
+                    <Form.Control type="password" placeholder="Enter old password" ref={passwordLamaRef} />
                   </Form.Group>
 
                   <Form.Group className="mb-3" controlId="formNewPassword">
                     <Form.Label>New Password</Form.Label>
-                    <Form.Control type="password" placeholder="Enter new password" ref={ref => (this.passwordBaruRef = ref)} />
+                    <Form.Control type="password" placeholder="Enter new password" ref={passwordBaruRef} />
                   </Form.Group>
 
                   <Form.Group className="mb-3" controlId="formConfirmNewPassword">
                     <Form.Label>Confirm New Password</Form.Label>
-                    <Form.Control type="password" placeholder="Re-enter new password" ref={ref => (this.confirmPassRef = ref)} />
+                    <Form.Control type="password" placeholder="Re-enter new password" ref={confirmPassRef} />
                   </Form.Group>
 
                   <div className="d-grid mt-4">
-                    <Button variant="primary" onClick={this.onClickgantipass} size="lg">
+                    <Button variant="primary" onClick={onClickgantipass} size="lg">
                       Update Password
                     </Button>
                   </div>
@@ -124,8 +124,7 @@ class Gantipass extends Component {
         </Row>
       </Container>
     );
-  }
-}
+};
 const MapstateToprops = state => {
   return {
     username: state.Auth.username,
