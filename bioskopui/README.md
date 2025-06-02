@@ -1,68 +1,135 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🎬 Bioskop Sandra - Frontend Application
 
-## Available Scripts
+This is the frontend React application for the Bioskop Sandra cinema booking system. Built with modern React 18, Redux for state management, and styled with Tailwind CSS and Bootstrap.
 
-In the project directory, you can run:
+## 🛠️ Technology Stack
+
+- **React 18.2.0** - Modern React with Hooks
+- **Redux 4.2.1** - State management
+- **React Router 6.17.0** - Client-side routing
+- **Bootstrap 5.3.0** - UI components
+- **Tailwind CSS 4.1.8** - Utility-first CSS
+- **Axios 1.6.0** - HTTP client
+- **React Icons 4.12.0** - Icon library
+
+## 📁 Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── Header.jsx      # Navigation header with auth
+│   ├── Footer.jsx      # Site footer
+│   ├── Slider.jsx      # Image carousel
+│   └── WelcomePages.jsx # Hero section
+├── pages/              # Page components
+│   ├── Home.jsx        # Movie listings
+│   ├── MovieDetail.jsx # Movie details
+│   ├── BuyTicket.jsx   # Ticket booking
+│   ├── Cart.jsx        # Shopping cart
+│   ├── Orders.jsx      # Order history
+│   ├── Transactions.jsx # Transaction history
+│   ├── Login.jsx       # Authentication
+│   ├── ManageMovies.jsx # Admin movie management
+│   └── ManageStudios.jsx # Admin studio management
+├── redux/              # State management
+│   ├── actions/        # Redux actions
+│   └── reducer/        # Redux reducers
+├── support/            # Utility files
+└── utils/              # Helper functions
+```
+
+## 🚀 Available Scripts
 
 ### `npm start`
-
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+Runs the app in development mode at [http://localhost:3000](http://localhost:3000).
+The page will reload when you make edits and show lint errors in the console.
 
 ### `npm test`
-
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Launches the test runner in interactive watch mode.
+See [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
-
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Builds the app for production to the `build` folder.
+It correctly bundles React in production mode and optimizes the build for best performance.
 
 ### `npm run eject`
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🎯 Key Features
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### User Features
+- **Movie Browsing**: Browse current movies with detailed information
+- **Seat Selection**: Interactive seat selection with real-time availability
+- **Ticket Booking**: Complete booking process with multiple showtimes
+- **Shopping Cart**: Add multiple tickets and manage orders
+- **PDF Tickets**: Download tickets with QR codes and barcodes
+- **Order History**: View past bookings and transaction history
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Admin Features
+- **Movie Management**: Add, edit, and delete movies
+- **Studio Management**: Manage cinema halls and seating arrangements
+- **Schedule Management**: Set movie showtimes and availability
+- **Order Tracking**: Monitor all bookings and transactions
 
-## Learn More
+## 🎨 UI Components
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Modern Design
+- **Responsive Layout**: Works on desktop, tablet, and mobile
+- **Tailwind CSS**: Utility-first CSS framework for rapid styling
+- **Bootstrap Components**: Pre-built UI components
+- **React Icons**: Beautiful icon library
+- **Smooth Animations**: Modern transitions and effects
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Component Architecture
+- **Functional Components**: Modern React with Hooks
+- **Redux State Management**: Centralized state management
+- **React Router**: Client-side routing
+- **Modular Design**: Reusable and maintainable components
 
-### Code Splitting
+## 🔧 Development
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn package manager
 
-### Analyzing the Bundle Size
+### Setup
+1. Install dependencies: `npm install`
+2. Start development server: `npm start`
+3. Build for production: `npm run build`
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+### Code Style
+- **PascalCase**: Component names follow PascalCase convention
+- **Functional Components**: Prefer function components over class components
+- **Modern React**: Uses React Hooks and modern patterns
+- **ESLint**: Code linting for consistency
 
-### Making a Progressive Web App
+## 📱 Responsive Design
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+The application is fully responsive and optimized for:
+- **Desktop**: Full-featured experience with all functionality
+- **Tablet**: Touch-optimized interface with adapted layouts
+- **Mobile**: Mobile-first design with optimized navigation
 
-### Advanced Configuration
+## 🔐 Authentication
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+- **User Registration**: New user account creation
+- **Login System**: Secure user authentication
+- **Role-based Access**: Different features for users and admins
+- **Password Management**: Change password functionality
+- **Session Management**: Persistent login state
 
-### Deployment
+## 📊 State Management
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+Uses Redux for centralized state management:
+- **Auth State**: User authentication and session data
+- **Cart State**: Shopping cart and order management
+- **Movie State**: Movie data and selections
+- **UI State**: Loading states and notifications
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+For more information about Create React App, check out the [documentation](https://facebook.github.io/create-react-app/docs/getting-started).
