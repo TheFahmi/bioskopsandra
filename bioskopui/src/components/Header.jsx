@@ -66,13 +66,13 @@ const Header = props => {
             {props.role === "admin" && (
               <>
                 <Link
-                  to="/manageAdmin"
+                  to="/manage-movies"
                   className="text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                 >
                   Manage Movies
                 </Link>
                 <Link
-                  to="/manageStudio"
+                  to="/manage-studios"
                   className="text-white hover:text-yellow-400 transition-colors duration-200 font-medium"
                 >
                   Manage Studios
@@ -117,7 +117,7 @@ const Header = props => {
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                       <Link
-                        to="/gantipassword"
+                        to="/change-password"
                         onClick={() => setIsDropdownOpen(false)}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
                       >
@@ -194,14 +194,14 @@ const Header = props => {
               {props.role === "admin" && (
                 <>
                   <Link
-                    to="/manageAdmin"
+                    to="/manage-movies"
                     onClick={toggleMenu}
                     className="text-white hover:text-yellow-400 transition-colors duration-200 font-medium py-2"
                   >
                     Manage Movies
                   </Link>
                   <Link
-                    to="/manageStudio"
+                    to="/manage-studios"
                     onClick={toggleMenu}
                     className="text-white hover:text-yellow-400 transition-colors duration-200 font-medium py-2"
                   >
@@ -225,7 +225,7 @@ const Header = props => {
                   <div className="border-t border-blue-700 pt-3 mt-3">
                     <p className="text-blue-200 text-sm mb-2">Welcome, {props.AuthLog}</p>
                     <Link
-                      to="/gantipassword"
+                      to="/change-password"
                       onClick={toggleMenu}
                       className="flex items-center text-white hover:text-yellow-400 transition-colors duration-200 font-medium py-2"
                     >

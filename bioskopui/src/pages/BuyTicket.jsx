@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
@@ -7,104 +7,105 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { FaClock, FaTicketAlt, FaCreditCard, FaMapMarkerAlt, FaTimes, FaCheck, FaUser, FaCalendar, FaFilm } from "react-icons/fa";
 import Swal from "sweetalert2";
 
-class Belitiket extends Component {
-  state = {
-    datamovie: {},
-    seats: 0,
-    baris: 0,
-    booked: [],
-    loading: true,
-    jam: this.props.location.state && this.props.location.state.jadwal && this.props.location.state.jadwal.length > 0
-         ? this.props.location.state.jadwal[0]
-         : 12,
-    pilihan: [],
-    openmodalcart: false,
-    redirecthome: false,
-    // New states for enhanced features
-    showPaymentModal: false,
-    paymentMethod: 'credit_card',
-    customerInfo: {
-      name: '',
-      email: '',
-      phone: ''
-    },
-    orderStep: 1, // 1: Select Seats, 2: Customer Info, 3: Payment, 4: Confirmation
-    processingPayment: false,
-    orderSuccess: false,
-    orderId: null
-  };
+const BuyTicket = (props) => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  componentDidMount() {
-    if (this.props.location.state) {
-      this.onJamchange();
-    } else {
-      this.setState({ loading: false }); // No location state, stop loading
-    }
-  }
+  const [movieData, setMovieData] = useState({});
+  const [totalSeats, setTotalSeats] = useState(0);
+  const [rowCount, setRowCount] = useState(0);
+  const [bookedSeats, setBookedSeats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTime, setSelectedTime] = useState(
+    location.state && location.state.jadwal && location.state.jadwal.length > 0
+      ? location.state.jadwal[0]
+      : 12
+  );
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [redirectToHome, setRedirectToHome] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+  const [orderStep, setOrderStep] = useState(1);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderId, setOrderId] = useState(null);
 
-  componentDidUpdate(prevProps, prevState) {
-    // If jam changes, fetch new seat data
-    if (prevState.jam !== this.state.jam) {
-      this.onJamchange();
-    }
-  }
-  
-  onJamchange = () => {
-    this.setState({ loading: true, pilihan: [] }); // Set loading true when jam changes
-    const studioId = this.props.location.state.studioId;
-    const movieId = this.props.location.state.id;
+  const onTimeChange = () => {
+    setLoading(true);
+    setSelectedSeats([]); // Set loading true when time changes
+    const studioId = location.state.studioId;
+    const movieId = location.state.id;
 
-    Axios.get(`${APIURL}studios/${studioId}`)
+    Axios.get(`${APIURL}/studios/${studioId}`)
       .then(res1 => {
-        Axios.get(`${APIURL}orders?movieId=${movieId}&jadwal=${this.state.jam}`)
+        Axios.get(`${APIURL}/orders?movieId=${movieId}&jadwal=${selectedTime}`)
           .then(res2 => {
-            const arrAxios = res2.data.map(val => Axios.get(`${APIURL}ordersDetails?orderId=${val.id}`));
-            Axios.all(arrAxios)
+            const orderPromises = res2.data.map(val => Axios.get(`${APIURL}/ordersDetails?orderId=${val.id}`));
+            Axios.all(orderPromises)
               .then(res3 => {
-                const arrAxios2 = res3.flatMap(val => val.data);
-                this.setState({
-                  datamovie: this.props.location.state,
-                  seats: res1.data.jumlahKursi,
-                  baris: res1.data.jumlahKursi / 20, // Assuming 20 seats per row
-                  booked: arrAxios2,
-                  loading: false
-                });
+                const bookedSeatData = res3.flatMap(val => val.data);
+                setMovieData(location.state);
+                setTotalSeats(res1.data.jumlahKursi);
+                setRowCount(res1.data.jumlahKursi / 20); // Assuming 20 seats per row
+                setBookedSeats(bookedSeatData);
+                setLoading(false);
               })
               .catch(err => {
                 console.log(err);
-                this.setState({ loading: false });
+                setLoading(false);
               });
           })
           .catch(err2 => {
             console.log(err2);
-            this.setState({ loading: false });
+            setLoading(false);
           });
       })
       .catch(err1 => {
                  // console.log(err);
              // console.log(err2);
          // console.log(err1);
-        this.setState({ loading: false });
+        setLoading(false);
       });
   };
 
-  onButtonjamclick = val => {
-    this.setState({ jam: val }); // Let CDU handle onJamChange call
+  useEffect(() => {
+    if (location.state) {
+      onTimeChange();
+    } else {
+      setLoading(false); // No location state, stop loading
+    }
+  }, []);
+
+  useEffect(() => {
+    // If selectedTime changes, fetch new seat data
+    if (location.state) {
+      onTimeChange();
+    }
+  }, [selectedTime]);
+
+  const onTimeButtonClick = val => {
+    setSelectedTime(val); // Let useEffect handle onTimeChange call
   };
 
-  onPilihSeatClick = (row, seat) => {
-    const pilihan = [...this.state.pilihan, { row, seat }];
-    this.setState({ pilihan });
+  const onSelectSeatClick = (row, seat) => {
+    const newSelectedSeats = [...selectedSeats, { row, seat }];
+    setSelectedSeats(newSelectedSeats);
   };
 
-  onCancelseatClick = (row, seat) => {
-    const pilihan = this.state.pilihan.filter(val => !(val.row === row && val.seat === seat));
-    this.setState({ pilihan });
+  const onCancelSeatClick = (row, seat) => {
+    const newSelectedSeats = selectedSeats.filter(val => !(val.row === row && val.seat === seat));
+    setSelectedSeats(newSelectedSeats);
   };
 
   // Enhanced order process
-  onOrderClick = () => {
-    if (this.state.pilihan.length === 0) {
+  const onOrderClick = () => {
+    if (selectedSeats.length === 0) {
       Swal.fire({
         icon: 'warning',
         title: 'No Seats Selected',
@@ -112,11 +113,10 @@ class Belitiket extends Component {
       });
       return;
     }
-    this.setState({ orderStep: 2 });
+    setOrderStep(2);
   };
 
-  handleCustomerInfoSubmit = () => {
-    const { customerInfo } = this.state;
+  const handleCustomerInfoSubmit = () => {
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       Swal.fire({
         icon: 'warning',
@@ -125,28 +125,27 @@ class Belitiket extends Component {
       });
       return;
     }
-    this.setState({ orderStep: 3 });
+    setOrderStep(3);
   };
 
-  handlePaymentSubmit = () => {
-    this.setState({ processingPayment: true });
+  const handlePaymentSubmit = () => {
+    setProcessingPayment(true);
 
     // Simulate payment processing
     setTimeout(() => {
-      this.processOrder();
+      processOrder();
     }, 2000);
   };
 
-  processOrder = () => {
-    const { UserId } = this.props;
-    const { datamovie, pilihan, jam, customerInfo, paymentMethod } = this.state;
-    const totalharga = pilihan.length * 25000;
+  const processOrder = () => {
+    const { UserId } = props;
+    const totalPrice = selectedSeats.length * 25000;
 
-    const dataorders = {
+    const orderData = {
       userId: UserId,
-      movieId: datamovie.id,
-      totalharga,
-      jadwal: jam,
+      movieId: movieData.id,
+      totalharga: totalPrice,
+      jadwal: selectedTime,
       bayar: true, // Set to true since payment is processed
       customerName: customerInfo.name,
       customerEmail: customerInfo.email,
@@ -156,28 +155,26 @@ class Belitiket extends Component {
       status: 'confirmed'
     };
 
-    Axios.post(`${APIURL}orders`, dataorders)
+    Axios.post(`${APIURL}/orders`, orderData)
       .then(res => {
-        const orderId = res.data.id;
-        const dataordersdetails = pilihan.map(val => ({
-          orderId,
+        const newOrderId = res.data.id;
+        const orderDetailsData = selectedSeats.map(val => ({
+          orderId: newOrderId,
           seat: val.seat,
           row: val.row
         }));
 
-        const postDetailsPromises = dataordersdetails.map(val => Axios.post(`${APIURL}ordersDetails`, val));
+        const postDetailsPromises = orderDetailsData.map(val => Axios.post(`${APIURL}/ordersDetails`, val));
         Axios.all(postDetailsPromises)
           .then(() => {
-            this.setState({
-              processingPayment: false,
-              orderSuccess: true,
-              orderId: orderId,
-              orderStep: 4
-            });
+            setProcessingPayment(false);
+            setOrderSuccess(true);
+            setOrderId(newOrderId);
+            setOrderStep(4);
           })
           .catch(err => {
             console.error('Error creating order details:', err);
-            this.setState({ processingPayment: false });
+            setProcessingPayment(false);
             Swal.fire({
               icon: 'error',
               title: 'Order Failed',
@@ -187,7 +184,7 @@ class Belitiket extends Component {
       })
       .catch(err => {
         console.error('Error creating order:', err);
-        this.setState({ processingPayment: false });
+        setProcessingPayment(false);
         Swal.fire({
           icon: 'error',
           title: 'Order Failed',
@@ -196,59 +193,54 @@ class Belitiket extends Component {
       });
   };
 
-  handleCustomerInfoChange = (field, value) => {
-    this.setState({
-      customerInfo: {
-        ...this.state.customerInfo,
-        [field]: value
-      }
+  const handleCustomerInfoChange = (field, value) => {
+    setCustomerInfo({
+      ...customerInfo,
+      [field]: value
     });
   };
 
-  goBackToStep = (step) => {
-    this.setState({ orderStep: step });
+  const goBackToStep = (step) => {
+    setOrderStep(step);
   };
 
-  resetOrder = () => {
-    this.setState({
-      pilihan: [],
-      orderStep: 1,
-      customerInfo: { name: '', email: '', phone: '' },
-      paymentMethod: 'credit_card',
-      orderSuccess: false,
-      orderId: null
-    });
+  const resetOrder = () => {
+    setSelectedSeats([]);
+    setOrderStep(1);
+    setCustomerInfo({ name: '', email: '', phone: '' });
+    setPaymentMethod('credit_card');
+    setOrderSuccess(false);
+    setOrderId(null);
   };
 
-  renderHarga = () => {
-    const jumlahtiket = this.state.pilihan.length;
-    const harga = jumlahtiket * 25000;
+  const renderPrice = () => {
+    const ticketCount = selectedSeats.length;
+    const totalPrice = ticketCount * 25000;
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-700">
-            {jumlahtiket} ticket(s) × {Numeral(25000).format("Rp0,0")}
+            {ticketCount} ticket(s) × {Numeral(25000).format("Rp0,0")}
           </span>
           <span className="text-xl font-bold text-blue-600">
-            {Numeral(harga).format("Rp0,0")}
+            {Numeral(totalPrice).format("Rp0,0")}
           </span>
         </div>
       </div>
     );
   };
 
-  renderseat = () => {
-    const { seats, baris, booked, pilihan } = this.state;
-    if (baris === 0) return null;
+  const renderSeats = () => {
+    if (rowCount === 0) return null;
 
-    const seatsPerRow = seats / baris;
-    let arr = Array(baris).fill(null).map(() => Array(seatsPerRow).fill(1));
+    const seatsPerRow = totalSeats / rowCount;
+    let seatMatrix = Array(rowCount).fill(null).map(() => Array(seatsPerRow).fill(1));
 
-    booked.forEach(val => {
-      if (val.row < baris && val.seat < seatsPerRow) arr[val.row][val.seat] = 3;
+    bookedSeats.forEach(val => {
+      if (val.row < rowCount && val.seat < seatsPerRow) seatMatrix[val.row][val.seat] = 3;
     });
-    pilihan.forEach(val => {
-      if (val.row < baris && val.seat < seatsPerRow) arr[val.row][val.seat] = 2;
+    selectedSeats.forEach(val => {
+      if (val.row < rowCount && val.seat < seatsPerRow) seatMatrix[val.row][val.seat] = 2;
     });
 
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -261,16 +253,16 @@ class Belitiket extends Component {
           </div>
         </div>
         <div className="mb-6">
-          {arr.map((rowSeats, rowIndex) => (
+          {seatMatrix.map((rowSeats, rowIndex) => (
             <div key={rowIndex} className="flex justify-center mb-2">
               {rowSeats.map((seatStatus, seatIndex) => {
                 let seatClass = "bg-gray-200 hover:bg-gray-300 text-gray-700 border-2 border-gray-300";
                 let disabled = false;
-                let onClickHandler = () => this.onPilihSeatClick(rowIndex, seatIndex);
+                let onClickHandler = () => onSelectSeatClick(rowIndex, seatIndex);
 
                 if (seatStatus === 2) { // Selected
                   seatClass = "bg-green-500 text-white hover:bg-green-600 border-2 border-green-600";
-                  onClickHandler = () => this.onCancelseatClick(rowIndex, seatIndex);
+                  onClickHandler = () => onCancelSeatClick(rowIndex, seatIndex);
                 } else if (seatStatus === 3) { // Booked
                   seatClass = "bg-red-500 text-white cursor-not-allowed border-2 border-red-600";
                   disabled = true;
@@ -310,20 +302,20 @@ class Belitiket extends Component {
     );
   };
   
-  renderbutton = () => {
-    if (!this.state.datamovie.jadwal) return null;
+  const renderTimeButtons = () => {
+    if (!movieData.jadwal) return null;
     return (
       <div className="flex flex-wrap justify-center gap-3 mb-6">
-        {this.state.datamovie.jadwal.map((val) => (
+        {movieData.jadwal.map((val) => (
           <button
             key={val}
             className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 ${
-              this.state.jam === val
+              selectedTime === val
                 ? "bg-blue-600 text-white shadow-lg"
                 : "bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-50"
             }`}
-            onClick={() => this.onButtonjamclick(val)}
-            disabled={this.state.loading && this.state.jam !== val}
+            onClick={() => onTimeButtonClick(val)}
+            disabled={loading && selectedTime !== val}
           >
             <FaClock className="inline mr-2" />
             {val}:00
@@ -333,13 +325,12 @@ class Belitiket extends Component {
     );
   };
 
-  handleBeliTiketSuccess = () => {
+  const handleTicketPurchaseSuccess = () => {
     // Instead of window.location.reload(), redirect to home or another appropriate page
-    this.setState({ redirecthome: true }); 
+    setRedirectToHome(true);
   };
 
-  renderStepIndicator = () => {
-    const { orderStep } = this.state;
+  const renderStepIndicator = () => {
     const steps = [
       { number: 1, title: 'Select Seats', icon: FaTicketAlt },
       { number: 2, title: 'Customer Info', icon: FaUser },
@@ -384,9 +375,7 @@ class Belitiket extends Component {
     );
   };
 
-  renderCustomerInfoStep = () => {
-    const { customerInfo } = this.state;
-
+  const renderCustomerInfoStep = () => {
     return (
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Customer Information</h3>
@@ -397,7 +386,7 @@ class Belitiket extends Component {
             <input
               type="text"
               value={customerInfo.name}
-              onChange={(e) => this.handleCustomerInfoChange('name', e.target.value)}
+              onChange={(e) => handleCustomerInfoChange('name', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter your full name"
             />
@@ -408,7 +397,7 @@ class Belitiket extends Component {
             <input
               type="email"
               value={customerInfo.email}
-              onChange={(e) => this.handleCustomerInfoChange('email', e.target.value)}
+              onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter your email"
             />
@@ -419,7 +408,7 @@ class Belitiket extends Component {
             <input
               type="tel"
               value={customerInfo.phone}
-              onChange={(e) => this.handleCustomerInfoChange('phone', e.target.value)}
+              onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter your phone number"
             />
@@ -428,13 +417,13 @@ class Belitiket extends Component {
 
         <div className="flex space-x-3 mt-6">
           <button
-            onClick={() => this.goBackToStep(1)}
+            onClick={() => goBackToStep(1)}
             className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
           >
             Back
           </button>
           <button
-            onClick={this.handleCustomerInfoSubmit}
+            onClick={handleCustomerInfoSubmit}
             className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Continue
@@ -444,9 +433,8 @@ class Belitiket extends Component {
     );
   };
 
-  renderPaymentStep = () => {
-    const { paymentMethod, processingPayment } = this.state;
-    const totalAmount = this.state.pilihan.length * 25000;
+  const renderPaymentStep = () => {
+    const totalAmount = selectedSeats.length * 25000;
 
     return (
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
@@ -457,7 +445,7 @@ class Belitiket extends Component {
             className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
               paymentMethod === 'credit_card' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
             }`}
-            onClick={() => this.setState({ paymentMethod: 'credit_card' })}
+            onClick={() => setPaymentMethod('credit_card')}
           >
             <div className="flex items-center">
               <FaCreditCard className="text-blue-600 mr-3" />
@@ -472,7 +460,7 @@ class Belitiket extends Component {
             className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
               paymentMethod === 'bank_transfer' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
             }`}
-            onClick={() => this.setState({ paymentMethod: 'bank_transfer' })}
+            onClick={() => setPaymentMethod('bank_transfer')}
           >
             <div className="flex items-center">
               <FaCreditCard className="text-green-600 mr-3" />
@@ -495,14 +483,14 @@ class Belitiket extends Component {
 
         <div className="flex space-x-3">
           <button
-            onClick={() => this.goBackToStep(2)}
+            onClick={() => goBackToStep(2)}
             className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
             disabled={processingPayment}
           >
             Back
           </button>
           <button
-            onClick={this.handlePaymentSubmit}
+            onClick={handlePaymentSubmit}
             disabled={processingPayment}
             className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
@@ -520,9 +508,8 @@ class Belitiket extends Component {
     );
   };
 
-  renderConfirmationStep = () => {
-    const { orderId, customerInfo } = this.state;
-    const totalAmount = this.state.pilihan.length * 25000;
+  const renderConfirmationStep = () => {
+    const totalAmount = selectedSeats.length * 25000;
 
     return (
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 text-center">
@@ -542,16 +529,16 @@ class Belitiket extends Component {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Movie:</span>
-              <span className="font-semibold">{this.state.datamovie.title}</span>
+              <span className="font-semibold">{movieData.title}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Showtime:</span>
-              <span className="font-semibold">{this.state.jam}:00</span>
+              <span className="font-semibold">{selectedTime}:00</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Seats:</span>
               <span className="font-semibold">
-                {this.state.pilihan.map(seat =>
+                {selectedSeats.map(seat =>
                   `${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[seat.row]}${seat.seat + 1}`
                 ).join(', ')}
               </span>
@@ -571,13 +558,13 @@ class Belitiket extends Component {
 
         <div className="space-y-3">
           <button
-            onClick={() => this.setState({ redirecthome: true })}
+            onClick={() => setRedirectToHome(true)}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Home
           </button>
           <button
-            onClick={this.resetOrder}
+            onClick={resetOrder}
             className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
           >
             Book Another Ticket
@@ -587,17 +574,14 @@ class Belitiket extends Component {
     );
   };
 
-  render() {
-    if (!this.props.location.state || !this.props.AuthLog) {
-      return <Navigate to="/login" replace />;
-    }
-    if (this.state.redirecthome) {
-      return <Navigate to="/" replace />;
-    }
+  if (!location.state || !props.AuthLog) {
+    return <Navigate to="/login" replace />;
+  }
+  if (redirectToHome) {
+    return <Navigate to="/" replace />;
+  }
 
-    const { orderStep, datamovie, loading, pilihan } = this.state;
-
-    return (
+  return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -609,23 +593,23 @@ class Belitiket extends Component {
           </div>
 
           {/* Step Indicator */}
-          {this.renderStepIndicator()}
+          {renderStepIndicator()}
 
           {/* Movie Info */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div className="flex items-center justify-center space-x-4">
               <FaFilm className="text-blue-600 text-2xl" />
-              <h2 className="text-2xl font-bold text-gray-900">{datamovie.title}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{movieData.title}</h2>
             </div>
             {orderStep === 1 && (
               <div className="mt-4 text-center">
                 <p className="text-gray-600 mb-4">Select your preferred showtime:</p>
-                {loading && pilihan.length === 0 ? (
+                {loading && selectedSeats.length === 0 ? (
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : (
-                  this.renderbutton()
+                  renderTimeButtons()
                 )}
               </div>
             )}
@@ -641,15 +625,15 @@ class Belitiket extends Component {
                   <p className="text-gray-600">Loading seats...</p>
                 </div>
               ) : (
-                this.renderseat()
+                renderSeats()
               )}
 
               {/* Price Summary and Continue Button */}
-              {pilihan.length > 0 && (
+              {selectedSeats.length > 0 && (
                 <div className="mt-8 max-w-md mx-auto">
-                  {this.renderHarga()}
+                  {renderPrice()}
                   <button
-                    onClick={this.onOrderClick}
+                    onClick={onOrderClick}
                     className="w-full mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
                   >
                     <FaTicketAlt className="inline mr-2" />
@@ -660,27 +644,12 @@ class Belitiket extends Component {
             </div>
           )}
 
-          {orderStep === 2 && this.renderCustomerInfoStep()}
-          {orderStep === 3 && this.renderPaymentStep()}
-          {orderStep === 4 && this.renderConfirmationStep()}
+          {orderStep === 2 && renderCustomerInfoStep()}
+          {orderStep === 3 && renderPaymentStep()}
+          {orderStep === 4 && renderConfirmationStep()}
         </div>
       </div>
     );
-  }
-}
-
-// Wrapper component to provide router props to class component
-const BelitiketWrapper = (props) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  return (
-    <Belitiket
-      {...props}
-      location={location}
-      navigate={navigate}
-    />
-  );
 };
 
 const MapstateToprops = state => {
@@ -689,4 +658,4 @@ const MapstateToprops = state => {
     UserId: state.Auth.id
   };
 };
-export default connect(MapstateToprops)(BelitiketWrapper);
+export default connect(MapstateToprops)(BuyTicket);

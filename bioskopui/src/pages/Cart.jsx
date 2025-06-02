@@ -1,26 +1,24 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import Axios from "axios";
 import { connect } from "react-redux";
 import { APIURL } from "./../support/ApiUrl";
 import { FaTrash, FaEye, FaShoppingCart, FaCreditCard, FaTicketAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 
-class Cart extends Component {
-  state = {
-    datacart: null,
-    modaldetail: false,
-    indexdetail: 0,
-    loading: false,
-    checkoutLoading: false
-  };
+const Cart = (props) => {
+  const [cartData, setCartData] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailIndex, setDetailIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  componentDidMount() {
-    Axios.get(`${APIURL}orders?userId=${this.props.UserId}&bayar=false`)
+  useEffect(() => {
+    Axios.get(`${APIURL}orders?userId=${props.UserId}&bayar=false`)
       .then(res => {
-        const datacart = res.data;
+        const cartDataResponse = res.data;
 
         // Fetch movie details and order details for each order
-        const promises = datacart.map(order => {
+        const promises = cartDataResponse.map(order => {
           const moviePromise = Axios.get(`${APIURL}movies/${order.movieId}`);
           const qtyPromise = Axios.get(`${APIURL}ordersDetails?orderId=${order.id}`);
           return Promise.all([moviePromise, qtyPromise]);
@@ -28,27 +26,27 @@ class Cart extends Component {
 
         Promise.all(promises)
           .then(results => {
-            const datafinal = datacart.map((order, index) => ({
+            const finalData = cartDataResponse.map((order, index) => ({
               ...order,
               movie: results[index][0].data, // Movie data
               qty: results[index][1].data    // Order details data
             }));
-            this.setState({ datacart: datafinal });
+            setCartData(finalData);
           })
           .catch(err => {
             console.error("Error fetching movie or order details:", err);
-            // Set datacart with orders but without movie details
-            this.setState({ datacart: datacart });
+            // Set cartData with orders but without movie details
+            setCartData(cartDataResponse);
           });
       })
       .catch(err => {
         console.error("Error fetching orders:", err);
-        this.setState({ datacart: [] });
+        setCartData([]);
       });
-  }
+  }, [props.UserId]);
 
-  handleCheckout = () => {
-    if (!this.state.datacart || this.state.datacart.length === 0) {
+  const handleCheckout = () => {
+    if (!cartData || cartData.length === 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Cart Empty',
@@ -68,22 +66,23 @@ class Cart extends Component {
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.processCheckout();
+        processCheckout();
       }
     });
-  }
+  };
 
-  processCheckout = () => {
-    this.setState({ checkoutLoading: true });
+  const processCheckout = () => {
+    setCheckoutLoading(true);
 
     // Update all orders to bayar: true
-    const updatePromises = this.state.datacart.map(order =>
+    const updatePromises = cartData.map(order =>
       Axios.patch(`${APIURL}orders/${order.id}`, { bayar: true })
     );
 
     Promise.all(updatePromises)
       .then(() => {
-        this.setState({ checkoutLoading: false, datacart: [] });
+        setCheckoutLoading(false);
+        setCartData([]);
         Swal.fire({
           icon: 'success',
           title: 'Checkout Successful!',
@@ -94,16 +93,16 @@ class Cart extends Component {
       })
       .catch(err => {
         console.error('Checkout error:', err);
-        this.setState({ checkoutLoading: false });
+        setCheckoutLoading(false);
         Swal.fire({
           icon: 'error',
           title: 'Checkout Failed',
           text: 'Something went wrong. Please try again.',
         });
       });
-  }
+  };
 
-  handleDeleteItem = (orderId, index) => {
+  const handleDeleteItem = (orderId, index) => {
     Swal.fire({
       title: 'Delete Item',
       text: 'Are you sure you want to remove this item from cart?',
@@ -127,9 +126,9 @@ class Cart extends Component {
             })
         ])
         .then(() => {
-          const newDatacart = [...this.state.datacart];
-          newDatacart.splice(index, 1);
-          this.setState({ datacart: newDatacart });
+          const newCartData = [...cartData];
+          newCartData.splice(index, 1);
+          setCartData(newCartData);
           Swal.fire({
             icon: 'success',
             title: 'Deleted!',
@@ -148,18 +147,18 @@ class Cart extends Component {
         });
       }
     });
-  }
+  };
 
-  calculateTotal = () => {
-    if (!this.state.datacart) return 0;
-    return this.state.datacart.reduce((total, item) => {
+  const calculateTotal = () => {
+    if (!cartData) return 0;
+    return cartData.reduce((total, item) => {
       const price = item.totalHarga || item.totalharga || 0;
       return total + price;
     }, 0);
-  }
+  };
 
-  renderCartItems = () => {
-    if (!this.state.datacart) {
+  const renderCartItems = () => {
+    if (!cartData) {
       return (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -168,7 +167,7 @@ class Cart extends Component {
       );
     }
 
-    if (this.state.datacart.length === 0) {
+    if (cartData.length === 0) {
       return (
         <div className="text-center py-12">
           <FaShoppingCart className="mx-auto text-6xl text-gray-300 mb-4" />
@@ -178,7 +177,7 @@ class Cart extends Component {
       );
     }
 
-    return this.state.datacart.map((item, index) => {
+    return cartData.map((item, index) => {
       const price = item.totalHarga || item.totalharga || 0;
       return (
         <div key={item.id} className="bg-white rounded-lg shadow-md p-6 mb-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
@@ -216,14 +215,14 @@ class Cart extends Component {
 
             <div className="flex items-center space-x-2 mt-4 md:mt-0">
               <button
-                onClick={() => this.setState({ modaldetail: true, indexdetail: index })}
+                onClick={() => { setShowDetailModal(true); setDetailIndex(index); }}
                 className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 text-sm"
               >
                 <FaEye className="mr-1" />
                 Details
               </button>
               <button
-                onClick={() => this.handleDeleteItem(item.id, index)}
+                onClick={() => handleDeleteItem(item.id, index)}
                 className="flex items-center px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-sm"
               >
                 <FaTrash className="mr-1" />
@@ -236,10 +235,8 @@ class Cart extends Component {
     });
   };
 
-  render() {
-    const { datacart, modaldetail, indexdetail, checkoutLoading } = this.state;
-    const currentCartItem = datacart && datacart.length > 0 ? datacart[indexdetail] : null;
-    const totalAmount = this.calculateTotal();
+  const currentCartItem = cartData && cartData.length > 0 ? cartData[detailIndex] : null;
+  const totalAmount = calculateTotal();
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -254,7 +251,7 @@ class Cart extends Component {
           </div>
 
           {/* Detail Modal */}
-          {modaldetail && (
+          {showDetailModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg max-w-md w-full max-h-96 overflow-hidden">
                 <div className="bg-blue-600 text-white p-4">
@@ -263,7 +260,7 @@ class Cart extends Component {
                       Seat Details - {currentCartItem && currentCartItem.movie ? currentCartItem.movie.title : 'Movie not found'}
                     </h3>
                     <button
-                      onClick={() => this.setState({ modaldetail: false })}
+                      onClick={() => setShowDetailModal(false)}
                       className="text-white hover:text-gray-200 text-xl"
                     >
                       ×
@@ -288,7 +285,7 @@ class Cart extends Component {
                 </div>
                 <div className="p-4 border-t">
                   <button
-                    onClick={() => this.setState({ modaldetail: false })}
+                    onClick={() => setShowDetailModal(false)}
                     className="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition-colors"
                   >
                     Close
@@ -304,7 +301,7 @@ class Cart extends Component {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">Cart Items</h2>
-                {this.renderCartItems()}
+                {renderCartItems()}
               </div>
             </div>
 
@@ -313,11 +310,11 @@ class Cart extends Component {
               <div className="bg-white rounded-lg shadow-lg p-6 sticky top-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">Order Summary</h2>
 
-                {datacart && datacart.length > 0 ? (
+                {cartData && cartData.length > 0 ? (
                   <div className="space-y-4">
                     <div className="border-b pb-4">
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Items ({datacart.length})</span>
+                        <span>Items ({cartData.length})</span>
                         <span>Rp {totalAmount.toLocaleString('id-ID')}</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -332,7 +329,7 @@ class Cart extends Component {
                     </div>
 
                     <button
-                      onClick={this.handleCheckout}
+                      onClick={handleCheckout}
                       disabled={checkoutLoading}
                       className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
                         checkoutLoading
@@ -364,14 +361,13 @@ class Cart extends Component {
         </div>
       </div>
     );
-  }
-}
+};
 
-const MapstateToprops = state => {
+const MapStateToProps = state => {
   return {
-    // Authlog: state.Auth.login, // Authlog not used in component
+    // AuthLog: state.Auth.login, // AuthLog not used in component
     UserId: state.Auth.id
   };
 };
 
-export default connect(MapstateToprops)(Cart); // Removed unused NotifCart from connect HOC
+export default connect(MapStateToProps)(Cart);

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
@@ -7,36 +7,34 @@ import { FaTicketAlt, FaClock, FaUser, FaCalendar, FaFilm, FaEye, FaDownload, Fa
 import Numeral from "numeral";
 import { generateTicketPDF } from "../utils/pdfGenerator";
 
-class Orders extends Component {
-  state = {
-    orders: [],
-    loading: true,
-    error: null,
-    selectedOrder: null,
-    showDetailModal: false
-  };
+const Orders = (props) => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  componentDidMount() {
-    this.fetchOrders();
-  }
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-  fetchOrders = () => {
-    this.setState({ loading: true });
+  const fetchOrders = () => {
+    setLoading(true);
 
-    Axios.get(`${APIURL}orders?userId=${this.props.UserId}`)
+    Axios.get(`${APIURL}/orders?userId=${props.UserId}`)
       .then(res => {
-        const orders = res.data;
+        const ordersData = res.data;
 
         // Fetch movie data and order details for each order
-        const promises = orders.map(order => {
-          const moviePromise = Axios.get(`${APIURL}movies/${order.movieId}`)
+        const promises = ordersData.map(order => {
+          const moviePromise = Axios.get(`${APIURL}/movies/${order.movieId}`)
             .then(movieRes => movieRes.data)
             .catch(err => {
               console.error(`Error fetching movie ${order.movieId}:`, err);
               return null; // Return null if movie not found
             });
 
-          const detailsPromise = Axios.get(`${APIURL}ordersDetails?orderId=${order.id}`)
+          const detailsPromise = Axios.get(`${APIURL}/ordersDetails?orderId=${order.id}`)
             .then(detailRes => detailRes.data)
             .catch(err => {
               console.error(`Error fetching order details for ${order.id}:`, err);
@@ -53,53 +51,43 @@ class Orders extends Component {
 
         Promise.all(promises)
           .then(ordersWithDetails => {
-            this.setState({
-              orders: ordersWithDetails.sort((a, b) => new Date(b.orderDate || b.id) - new Date(a.orderDate || a.id)),
-              loading: false
-            });
+            setOrders(ordersWithDetails.sort((a, b) => new Date(b.orderDate || b.id) - new Date(a.orderDate || a.id)));
+            setLoading(false);
           })
           .catch(err => {
             console.error('Error processing orders:', err);
-            this.setState({
-              orders: orders,
-              loading: false
-            });
+            setOrders(ordersData);
+            setLoading(false);
           });
       })
       .catch(err => {
         console.error('Error fetching orders:', err);
-        this.setState({
-          error: 'Failed to load orders',
-          loading: false
-        });
+        setError('Failed to load orders');
+        setLoading(false);
       });
   };
 
-  showOrderDetail = (order) => {
-    this.setState({ 
-      selectedOrder: order,
-      showDetailModal: true 
-    });
+  const showOrderDetail = (order) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
   };
 
-  closeDetailModal = () => {
-    this.setState({
-      selectedOrder: null,
-      showDetailModal: false
-    });
+  const closeDetailModal = () => {
+    setSelectedOrder(null);
+    setShowDetailModal(false);
   };
 
-  downloadTicket = async (order) => {
+  const downloadTicket = async (order) => {
     try {
       await generateTicketPDF(order);
     } catch (error) {
       console.error('Error generating PDF ticket:', error);
       // Fallback to text download if PDF generation fails
-      this.downloadTextTicket(order);
+      downloadTextTicket(order);
     }
   };
 
-  downloadTextTicket = (order) => {
+  const downloadTextTicket = (order) => {
     const movie = order.movie || {};
     const orderDetails = order.orderDetails || [];
     const seats = orderDetails.map(seat =>
@@ -145,7 +133,7 @@ Please arrive 15 minutes before showtime.
     window.URL.revokeObjectURL(url);
   };
 
-  getStatusBadge = (order) => {
+  const getStatusBadge = (order) => {
     if (order.bayar) {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -163,18 +151,18 @@ Please arrive 15 minutes before showtime.
     }
   };
 
-  renderOrderCard = (order) => {
+  const renderOrderCard = (order) => {
     const movie = order.movie || {};
     const seatCount = order.orderDetails ? order.orderDetails.length : 0;
-    
+
     return (
       <div key={order.id} className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
               {movie.image && (
-                <img 
-                  src={movie.image} 
+                <img
+                  src={movie.image}
                   alt={movie.title}
                   className="w-16 h-24 object-cover rounded-md"
                 />
@@ -200,7 +188,7 @@ Please arrive 15 minutes before showtime.
               </div>
             </div>
             <div className="text-right">
-              {this.getStatusBadge(order)}
+              {getStatusBadge(order)}
               <div className="mt-2 text-lg font-bold text-gray-900">
                 {Numeral(order.totalharga || order.totalHarga || 0).format("Rp0,0")}
               </div>
@@ -223,7 +211,7 @@ Please arrive 15 minutes before showtime.
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => this.downloadTicket(order)}
+                onClick={() => downloadTicket(order)}
                 className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 title="Download PDF Ticket"
               >
@@ -231,7 +219,7 @@ Please arrive 15 minutes before showtime.
                 PDF
               </button>
               <button
-                onClick={() => this.showOrderDetail(order)}
+                onClick={() => showOrderDetail(order)}
                 className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <FaEye className="mr-1" />
@@ -244,8 +232,7 @@ Please arrive 15 minutes before showtime.
     );
   };
 
-  renderDetailModal = () => {
-    const { selectedOrder, showDetailModal } = this.state;
+  const renderDetailModal = () => {
     if (!showDetailModal || !selectedOrder) return null;
 
     const movie = selectedOrder.movie || {};
@@ -258,7 +245,7 @@ Please arrive 15 minutes before showtime.
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-semibold">Order Details</h3>
               <button
-                onClick={this.closeDetailModal}
+                onClick={closeDetailModal}
                 className="text-white hover:text-gray-200 text-xl"
               >
                 <FaTimes />
@@ -306,7 +293,7 @@ Please arrive 15 minutes before showtime.
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Status:</span>
-                    {this.getStatusBadge(selectedOrder)}
+                    {getStatusBadge(selectedOrder)}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Order Date:</span>
@@ -367,13 +354,13 @@ Please arrive 15 minutes before showtime.
             {/* Actions */}
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={this.closeDetailModal}
+                onClick={closeDetailModal}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Close
               </button>
               <button
-                onClick={() => this.downloadTicket(selectedOrder)}
+                onClick={() => downloadTicket(selectedOrder)}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <FaFilePdf className="inline mr-2" />
@@ -386,12 +373,9 @@ Please arrive 15 minutes before showtime.
     );
   };
 
-  render() {
-    if (!this.props.AuthLog) {
-      return <Navigate to="/login" replace />;
-    }
-
-    const { orders, loading, error } = this.state;
+  if (!props.AuthLog) {
+    return <Navigate to="/login" replace />;
+  }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -432,17 +416,16 @@ Please arrive 15 minutes before showtime.
             </div>
           ) : (
             <div className="space-y-6">
-              {orders.map(order => this.renderOrderCard(order))}
+              {orders.map(order => renderOrderCard(order))}
             </div>
           )}
 
           {/* Detail Modal */}
-          {this.renderDetailModal()}
+          {renderDetailModal()}
         </div>
       </div>
     );
-  }
-}
+};
 
 const mapStateToProps = state => ({
   AuthLog: state.Auth.login,

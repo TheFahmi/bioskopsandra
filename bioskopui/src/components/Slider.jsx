@@ -1,17 +1,12 @@
-import React, { Component } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaPlay, FaTicketAlt, FaStar, FaClock, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-class Slider extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      currentSlide: 0,
-      isAutoPlaying: true
-    };
-    this.autoPlayInterval = null;
-  }
+const Slider = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const autoPlayInterval = useRef(null);
 
-  slides = [
+  const slides = [
     {
       id: 1,
       image: "https://6a25bbd04bd33b8a843e-9626a8b6c7858057941524bfdad5f5b0.ssl.cf5.rackcdn.com/styles/movie_1500x580/rcf/news/A4_horz_brandburst_1500x580.jpg?itok=4MqI9imW",
@@ -41,65 +36,56 @@ class Slider extends Component {
     }
   ];
 
-  componentDidMount() {
-    this.startAutoPlay();
-  }
-
-  componentWillUnmount() {
-    this.stopAutoPlay();
-  }
-
-  startAutoPlay = () => {
-    if (this.state.isAutoPlaying) {
-      this.autoPlayInterval = setInterval(() => {
-        this.nextSlide();
+  const startAutoPlay = () => {
+    if (isAutoPlaying) {
+      autoPlayInterval.current = setInterval(() => {
+        nextSlide();
       }, 5000);
     }
-  }
+  };
 
-  stopAutoPlay = () => {
-    if (this.autoPlayInterval) {
-      clearInterval(this.autoPlayInterval);
-      this.autoPlayInterval = null;
+  const stopAutoPlay = () => {
+    if (autoPlayInterval.current) {
+      clearInterval(autoPlayInterval.current);
+      autoPlayInterval.current = null;
     }
-  }
+  };
 
-  nextSlide = () => {
-    this.setState(prevState => ({
-      currentSlide: (prevState.currentSlide + 1) % this.slides.length
-    }));
-  }
+  const nextSlide = () => {
+    setCurrentSlide(prevSlide => (prevSlide + 1) % slides.length);
+  };
 
-  prevSlide = () => {
-    this.setState(prevState => ({
-      currentSlide: prevState.currentSlide === 0 ? this.slides.length - 1 : prevState.currentSlide - 1
-    }));
-  }
+  const prevSlide = () => {
+    setCurrentSlide(prevSlide => prevSlide === 0 ? slides.length - 1 : prevSlide - 1);
+  };
 
-  goToSlide = (index) => {
-    this.setState({ currentSlide: index });
-  }
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
 
-  handleMouseEnter = () => {
-    this.stopAutoPlay();
-  }
+  const handleMouseEnter = () => {
+    stopAutoPlay();
+  };
 
-  handleMouseLeave = () => {
-    this.startAutoPlay();
-  }
+  const handleMouseLeave = () => {
+    startAutoPlay();
+  };
 
-  render() {
-    const { currentSlide } = this.state;
-    const slide = this.slides[currentSlide];
+  useEffect(() => {
+    startAutoPlay();
+    return () => stopAutoPlay();
+  }, [isAutoPlaying]);
 
-    return (
-      <div
-        className="relative h-screen overflow-hidden"
-        onMouseEnter={this.handleMouseEnter}
-        onMouseLeave={this.handleMouseLeave}
-      >
-        {/* Background Images */}
-        {this.slides.map((slideItem, index) => (
+  const slide = slides[currentSlide];
+
+  return (
+    <div
+      className="relative h-screen overflow-hidden"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Background Images */}
+      {slides.map((slideItem, index) => (
           <div
             key={slideItem.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -217,14 +203,14 @@ class Slider extends Component {
 
         {/* Navigation Arrows */}
         <button
-          onClick={this.prevSlide}
+          onClick={prevSlide}
           className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all duration-300"
         >
           <FaChevronLeft className="text-xl" />
         </button>
 
         <button
-          onClick={this.nextSlide}
+          onClick={nextSlide}
           className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all duration-300"
         >
           <FaChevronRight className="text-xl" />
@@ -232,10 +218,10 @@ class Slider extends Component {
 
         {/* Slide Indicators */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
-          {this.slides.map((_, index) => (
+          {slides.map((_, index) => (
             <button
               key={index}
-              onClick={() => this.goToSlide(index)}
+              onClick={() => goToSlide(index)}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
                   ? 'bg-yellow-400 w-8'
@@ -253,7 +239,6 @@ class Slider extends Component {
         </div>
       </div>
     );
-  }
-}
+};
 
 export default Slider;

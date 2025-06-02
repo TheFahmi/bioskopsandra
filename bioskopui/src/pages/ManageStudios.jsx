@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { Navigate } from "react-router-dom";
 import Axios from "axios";
@@ -6,86 +6,75 @@ import { APIURL } from "../support/ApiUrl";
 import Swal from "sweetalert2";
 import { FaPlus, FaEdit, FaTrash, FaTheaterMasks, FaChair, FaEye, FaTimes } from "react-icons/fa";
 
-class ManageStudio extends Component {
-  state = {
-    loading: true,
-    datastudio: [],
-    modaladd: false,
-    modaledit: false,
-    modalview: false,
-    indexEdit: -1,
-    idEdit: -1,
-    viewStudio: null,
-    formData: {
-      nama: '',
-      jumlahKursi: ''
-    }
-  };
+const ManageStudios = (props) => {
+  const [loading, setLoading] = useState(true);
+  const [studioData, setStudioData] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [editIndex, setEditIndex] = useState(-1);
+  const [editId, setEditId] = useState(-1);
+  const [viewStudio, setViewStudio] = useState(null);
+  const [formData, setFormData] = useState({
+    nama: '',
+    jumlahKursi: ''
+  });
 
-  componentDidMount() {
-    this.fetchStudios();
-  }
+  useEffect(() => {
+    fetchStudios();
+  }, []);
 
-  fetchStudios = () => {
-    this.setState({ loading: true });
+  const fetchStudios = () => {
+    setLoading(true);
     Axios.get(`${APIURL}studios`)
       .then(res => {
-        this.setState({ datastudio: res.data, loading: false });
+        setStudioData(res.data);
+        setLoading(false);
       })
       .catch(err => {
          // console.log(err);
-        this.setState({ loading: false });
+        setLoading(false);
         Swal.fire("Error", "Failed to fetch studio data.", "error");
       });
-  }
+  };
 
-  handleShowEditModal = (index) => {
-    const studioToEdit = this.state.datastudio[index];
-    this.setState({
-      indexEdit: index,
-      modaledit: true,
-      idEdit: studioToEdit.id,
-      formData: {
-        nama: studioToEdit.nama,
-        jumlahKursi: studioToEdit.jumlahKursi
-      }
+  const handleShowEditModal = (index) => {
+    const studioToEdit = studioData[index];
+    setEditIndex(index);
+    setShowEditModal(true);
+    setEditId(studioToEdit.id);
+    setFormData({
+      nama: studioToEdit.nama,
+      jumlahKursi: studioToEdit.jumlahKursi
     });
   };
 
-  handleCloseEditModal = () => {
-    this.setState({
-      modaledit: false,
-      indexEdit: -1,
-      idEdit: -1,
-      formData: { nama: '', jumlahKursi: '' }
-    });
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditIndex(-1);
+    setEditId(-1);
+    setFormData({ nama: '', jumlahKursi: '' });
   };
 
-  handleShowViewModal = (studio) => {
-    this.setState({
-      modalview: true,
-      viewStudio: studio
-    });
+  const handleShowViewModal = (studio) => {
+    setShowViewModal(true);
+    setViewStudio(studio);
   };
 
-  handleCloseViewModal = () => {
-    this.setState({
-      modalview: false,
-      viewStudio: null
-    });
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setViewStudio(null);
   };
 
-  handleInputChange = (field, value) => {
-    this.setState({
-      formData: {
-        ...this.state.formData,
-        [field]: value
-      }
+  const handleInputChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value
     });
   };
   
-  handleSaveEditStudio = () => {
-    const { nama, jumlahKursi } = this.state.formData;
+  const handleSaveEditStudio = () => {
+    const { nama, jumlahKursi } = formData;
     const seats = parseInt(jumlahKursi);
 
     if (!nama || isNaN(seats) || seats <= 0) {
@@ -94,10 +83,10 @@ class ManageStudio extends Component {
 
     const updatedStudio = { nama, jumlahKursi: seats };
 
-    Axios.put(`${APIURL}studios/${this.state.idEdit}`, updatedStudio)
+    Axios.put(`${APIURL}studios/${editId}`, updatedStudio)
       .then(() => {
-        this.fetchStudios();
-        this.handleCloseEditModal();
+        fetchStudios();
+        handleCloseEditModal();
         Swal.fire("Success!", "Studio data updated successfully.", "success");
       })
       .catch(err => {
@@ -106,22 +95,18 @@ class ManageStudio extends Component {
       });
   };
 
-  handleShowAddModal = () => {
-    this.setState({
-      modaladd: true,
-      formData: { nama: '', jumlahKursi: '' }
-    });
+  const handleShowAddModal = () => {
+    setShowAddModal(true);
+    setFormData({ nama: '', jumlahKursi: '' });
   };
 
-  handleCloseAddModal = () => {
-    this.setState({
-      modaladd: false,
-      formData: { nama: '', jumlahKursi: '' }
-    });
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setFormData({ nama: '', jumlahKursi: '' });
   };
 
-  handleAddStudio = () => {
-    const { nama, jumlahKursi } = this.state.formData;
+  const handleAddStudio = () => {
+    const { nama, jumlahKursi } = formData;
     const seats = parseInt(jumlahKursi);
 
     if (!nama || isNaN(seats) || seats <= 0) {
@@ -132,8 +117,8 @@ class ManageStudio extends Component {
 
     Axios.post(`${APIURL}studios`, newStudio)
       .then(() => {
-        this.fetchStudios();
-        this.handleCloseAddModal();
+        fetchStudios();
+        handleCloseAddModal();
         Swal.fire("Success!", "New studio added successfully.", "success");
       })
       .catch(err => {
@@ -142,7 +127,7 @@ class ManageStudio extends Component {
       });
   };
 
-  handleDeleteStudio = (id, name) => {
+  const handleDeleteStudio = (id, name) => {
     Swal.fire({
       title: `Are you sure you want to delete ${name}?`,
       text: "This action cannot be undone.",
@@ -156,7 +141,7 @@ class ManageStudio extends Component {
       if (result.value) {
         Axios.delete(`${APIURL}studios/${id}`)
           .then(() => {
-            this.fetchStudios(); // Refresh data
+            fetchStudios(); // Refresh data
             Swal.fire("Deleted!", `${name} has been deleted.`, "success");
           })
           .catch(err => {
@@ -169,8 +154,8 @@ class ManageStudio extends Component {
     });
   };
 
-  renderStudioCards = () => {
-    return this.state.datastudio.map((studio, index) => (
+  const renderStudioCards = () => {
+    return studioData.map((studio, index) => (
       <div key={studio.id} className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
@@ -195,7 +180,7 @@ class ManageStudio extends Component {
 
           <div className="flex justify-end space-x-2">
             <button
-              onClick={() => this.handleShowViewModal(studio)}
+              onClick={() => handleShowViewModal(studio)}
               className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
               title="View Details"
             >
@@ -203,14 +188,14 @@ class ManageStudio extends Component {
               View
             </button>
             <button
-              onClick={() => this.handleShowEditModal(index)}
+              onClick={() => handleShowEditModal(index)}
               className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               <FaEdit className="mr-1" />
               Edit
             </button>
             <button
-              onClick={() => this.handleDeleteStudio(studio.id, studio.nama)}
+              onClick={() => handleDeleteStudio(studio.id, studio.nama)}
               className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
             >
               <FaTrash className="mr-1" />
@@ -222,17 +207,15 @@ class ManageStudio extends Component {
     ));
   };
 
-  renderModal = (type) => {
-    const { modaladd, modaledit, modalview, formData, viewStudio } = this.state;
-
-    if (type === 'view' && modalview && viewStudio) {
+  const renderModal = (type) => {
+    if (type === 'view' && showViewModal && viewStudio) {
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="bg-blue-600 text-white p-6 rounded-t-lg">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Studio Details</h3>
-                <button onClick={this.handleCloseViewModal} className="text-white hover:text-gray-200">
+                <button onClick={handleCloseViewModal} className="text-white hover:text-gray-200">
                   <FaTimes className="text-xl" />
                 </button>
               </div>
@@ -258,7 +241,7 @@ class ManageStudio extends Component {
                 </div>
               </div>
               <button
-                onClick={this.handleCloseViewModal}
+                onClick={handleCloseViewModal}
                 className="w-full mt-6 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Close
@@ -269,8 +252,8 @@ class ManageStudio extends Component {
       );
     }
 
-    const isEdit = type === 'edit' && modaledit;
-    const isAdd = type === 'add' && modaladd;
+    const isEdit = type === 'edit' && showEditModal;
+    const isAdd = type === 'add' && showAddModal;
 
     if (!isEdit && !isAdd) return null;
 
@@ -283,7 +266,7 @@ class ManageStudio extends Component {
                 {isEdit ? 'Edit Studio' : 'Add New Studio'}
               </h3>
               <button
-                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                onClick={isEdit ? handleCloseEditModal : handleCloseAddModal}
                 className="text-white hover:text-gray-200"
               >
                 <FaTimes className="text-xl" />
@@ -297,7 +280,7 @@ class ManageStudio extends Component {
                 <input
                   type="text"
                   value={formData.nama}
-                  onChange={(e) => this.handleInputChange('nama', e.target.value)}
+                  onChange={(e) => handleInputChange('nama', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter studio name"
                 />
@@ -307,7 +290,7 @@ class ManageStudio extends Component {
                 <input
                   type="number"
                   value={formData.jumlahKursi}
-                  onChange={(e) => this.handleInputChange('jumlahKursi', e.target.value)}
+                  onChange={(e) => handleInputChange('jumlahKursi', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter number of seats"
                   min="1"
@@ -316,13 +299,13 @@ class ManageStudio extends Component {
             </div>
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                onClick={isEdit ? handleCloseEditModal : handleCloseAddModal}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={isEdit ? this.handleSaveEditStudio : this.handleAddStudio}
+                onClick={isEdit ? handleSaveEditStudio : handleAddStudio}
                 className={`flex-1 ${isEdit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white py-2 px-4 rounded-lg transition-colors`}
               >
                 {isEdit ? 'Save Changes' : 'Add Studio'}
@@ -334,12 +317,9 @@ class ManageStudio extends Component {
     );
   };
 
-  render() {
-    const { datastudio, loading } = this.state;
-
-    if (this.props.role !== "admin") {
-      return <Navigate to="/" replace />;
-    }
+  if (props.role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -354,7 +334,7 @@ class ManageStudio extends Component {
               <p className="text-gray-600">Manage cinema studios and seating arrangements</p>
             </div>
             <button
-              onClick={this.handleShowAddModal}
+              onClick={handleShowAddModal}
               className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               <FaPlus className="mr-2" />
@@ -366,19 +346,19 @@ class ManageStudio extends Component {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {datastudio.length}
+                {studioData.length}
               </div>
               <div className="text-gray-600">Total Studios</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="text-3xl font-bold text-green-600 mb-2">
-                {datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0)}
+                {studioData.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0)}
               </div>
               <div className="text-gray-600">Total Seats</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="text-3xl font-bold text-purple-600 mb-2">
-                {datastudio.length > 0 ? Math.round(datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0) / datastudio.length) : 0}
+                {studioData.length > 0 ? Math.round(studioData.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0) / studioData.length) : 0}
               </div>
               <div className="text-gray-600">Avg Seats/Studio</div>
             </div>
@@ -390,13 +370,13 @@ class ManageStudio extends Component {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading studios...</p>
             </div>
-          ) : datastudio.length === 0 ? (
+          ) : studioData.length === 0 ? (
             <div className="text-center py-12">
               <FaTheaterMasks className="mx-auto text-6xl text-gray-300 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No studios found</h3>
               <p className="text-gray-500 mb-6">Create your first studio to get started.</p>
               <button
-                onClick={this.handleShowAddModal}
+                onClick={handleShowAddModal}
                 className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <FaPlus className="mr-2" />
@@ -405,19 +385,18 @@ class ManageStudio extends Component {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {this.renderStudioCards()}
+              {renderStudioCards()}
             </div>
           )}
 
           {/* Modals */}
-          {this.renderModal('add')}
-          {this.renderModal('edit')}
-          {this.renderModal('view')}
+          {renderModal('add')}
+          {renderModal('edit')}
+          {renderModal('view')}
         </div>
       </div>
     );
-  }
-}
+};
 
 const MapstateToprops = state => {
   return {
@@ -427,4 +406,4 @@ const MapstateToprops = state => {
   };
 };
 
-export default connect(MapstateToprops)(ManageStudio);
+export default connect(MapstateToprops)(ManageStudios);

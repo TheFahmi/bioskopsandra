@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
@@ -9,73 +9,66 @@ import { FaPlus, FaEdit, FaTrash, FaFilm, FaEye, FaTimes, FaClock, FaPlay, FaThe
 
 const Myswal = withReactContent(Swal);
 
-class ManageAdmin extends Component {
-  state = {
-    dataFilm: [],
-    modaladd: false,
-    modaledit: false,
-    modalview: false,
-    indexedit: 0,
-    jadwal: [12, 14, 16, 18, 20, 22],
-    datastudio: [],
-    loading: true,
-    readmoreselected: -1,
-    viewMovie: null,
-    formData: {
-      title: '',
-      image: '',
-      synopsys: '',
-      sutradara: '',
-      genre: '',
-      durasi: '',
-      jadwal: [],
-      produksi: '',
-      trailer: '',
-      studioId: ''
-    }
-  };
+const ManageMovies = (props) => {
+  const [dataFilm, setDataFilm] = useState([]);
+  const [modaladd, setModaladd] = useState(false);
+  const [modaledit, setModaledit] = useState(false);
+  const [modalview, setModalview] = useState(false);
+  const [indexedit, setIndexedit] = useState(0);
+  const [jadwal] = useState([12, 14, 16, 18, 20, 22]);
+  const [datastudio, setDatastudio] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [readmoreselected, setReadmoreselected] = useState(-1);
+  const [viewMovie, setViewMovie] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    image: '',
+    synopsys: '',
+    sutradara: '',
+    genre: '',
+    durasi: '',
+    jadwal: [],
+    produksi: '',
+    trailer: '',
+    studioId: ''
+  });
 
-  componentDidMount() {
-    this.fetchData();
-  }
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  fetchData = () => {
-    this.setState({ loading: true });
+  const fetchData = () => {
+    setLoading(true);
     Axios.get(`${APIURL}movies`)
       .then(resMovies => {
         Axios.get(`${APIURL}studios`)
           .then(resStudios => {
-            this.setState({
-              dataFilm: resMovies.data,
-              datastudio: resStudios.data,
-              loading: false
-            });
+            setDataFilm(resMovies.data);
+            setDatastudio(resStudios.data);
+            setLoading(false);
           })
           .catch(errStudios => {
             console.log(errStudios);
-            this.setState({ loading: false });
+            setLoading(false);
             Myswal.fire("Error", "Failed to fetch studio data.", "error");
           });
       })
       .catch(errMovies => {
              // console.log(errStudios);
          // console.log(errMovies);
-        this.setState({ loading: false });
+        setLoading(false);
         Myswal.fire("Error", "Failed to fetch movie data.", "error");
       });
-  }
+  };
 
-  handleInputChange = (field, value) => {
-    this.setState({
-      formData: {
-        ...this.state.formData,
-        [field]: value
-      }
+  const handleInputChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value
     });
   };
 
-  handleScheduleChange = (time, checked) => {
-    const { formData } = this.state;
+  const handleScheduleChange = (time, checked) => {
     let newSchedule = [...formData.jadwal];
 
     if (checked) {
@@ -86,105 +79,90 @@ class ManageAdmin extends Component {
       newSchedule = newSchedule.filter(t => t !== time);
     }
 
-    this.setState({
-      formData: {
-        ...formData,
-        jadwal: newSchedule
-      }
+    setFormData({
+      ...formData,
+      jadwal: newSchedule
     });
   };
 
-  handleShowAddModal = () => {
-    this.setState({
-      modaladd: true,
-      formData: {
-        title: '',
-        image: '',
-        synopsys: '',
-        sutradara: '',
-        genre: '',
-        durasi: '',
-        jadwal: [],
-        produksi: '',
-        trailer: '',
-        studioId: this.state.datastudio.length > 0 ? this.state.datastudio[0].id : ''
-      }
+  const handleShowAddModal = () => {
+    setModaladd(true);
+    setFormData({
+      title: '',
+      image: '',
+      synopsys: '',
+      sutradara: '',
+      genre: '',
+      durasi: '',
+      jadwal: [],
+      produksi: '',
+      trailer: '',
+      studioId: datastudio.length > 0 ? datastudio[0].id : ''
     });
   };
 
-  handleCloseAddModal = () => {
-    this.setState({
-      modaladd: false,
-      formData: {
-        title: '',
-        image: '',
-        synopsys: '',
-        sutradara: '',
-        genre: '',
-        durasi: '',
-        jadwal: [],
-        produksi: '',
-        trailer: '',
-        studioId: ''
-      }
+  const handleCloseAddModal = () => {
+    setModaladd(false);
+    setFormData({
+      title: '',
+      image: '',
+      synopsys: '',
+      sutradara: '',
+      genre: '',
+      durasi: '',
+      jadwal: [],
+      produksi: '',
+      trailer: '',
+      studioId: ''
     });
   };
 
-  handleShowEditModal = (index) => {
-    const movie = this.state.dataFilm[index];
-    this.setState({
-      modaledit: true,
-      indexedit: index,
-      formData: {
-        title: movie.title || '',
-        image: movie.image || '',
-        synopsys: movie.synopsys || '',
-        sutradara: movie.sutradara || '',
-        genre: movie.genre || '',
-        durasi: movie.durasi || '',
-        jadwal: movie.jadwal || [],
-        produksi: movie.produksi || '',
-        trailer: movie.trailer || '',
-        studioId: movie.studioId || ''
-      }
+  const handleShowEditModal = (index) => {
+    const movie = dataFilm[index];
+    setModaledit(true);
+    setIndexedit(index);
+    setFormData({
+      title: movie.title || '',
+      image: movie.image || '',
+      synopsys: movie.synopsys || '',
+      sutradara: movie.sutradara || '',
+      genre: movie.genre || '',
+      durasi: movie.durasi || '',
+      jadwal: movie.jadwal || [],
+      produksi: movie.produksi || '',
+      trailer: movie.trailer || '',
+      studioId: movie.studioId || ''
     });
   };
 
-  handleCloseEditModal = () => {
-    this.setState({
-      modaledit: false,
-      indexedit: 0,
-      formData: {
-        title: '',
-        image: '',
-        synopsys: '',
-        sutradara: '',
-        genre: '',
-        durasi: '',
-        jadwal: [],
-        produksi: '',
-        trailer: '',
-        studioId: ''
-      }
+  const handleCloseEditModal = () => {
+    setModaledit(false);
+    setIndexedit(0);
+    setFormData({
+      title: '',
+      image: '',
+      synopsys: '',
+      sutradara: '',
+      genre: '',
+      durasi: '',
+      jadwal: [],
+      produksi: '',
+      trailer: '',
+      studioId: ''
     });
   };
 
-  handleShowViewModal = (movie) => {
-    this.setState({
-      modalview: true,
-      viewMovie: movie
-    });
+  const handleShowViewModal = (movie) => {
+    setModalview(true);
+    setViewMovie(movie);
   };
 
-  handleCloseViewModal = () => {
-    this.setState({
-      modalview: false,
-      viewMovie: null
-    });
+  const handleCloseViewModal = () => {
+    setModalview(false);
+    setViewMovie(null);
   };
 
-  onUpdateDataClick = () => {
-    const { formData, dataFilm, indexedit } = this.state;
+  const onUpdateDataClick = () => {
     const currentFilm = dataFilm[indexedit];
 
     if (!formData.title || !formData.image || !formData.synopsys || !formData.sutradara ||
@@ -201,8 +179,8 @@ class ManageAdmin extends Component {
 
     Axios.patch(`${APIURL}movies/${currentFilm.id}`, updatedData)
       .then(() => {
-        this.fetchData();
-        this.handleCloseEditModal();
+        fetchData();
+        handleCloseEditModal();
         Myswal.fire("Success!", "Movie data updated successfully.", "success");
       })
       .catch(err => {
@@ -211,9 +189,7 @@ class ManageAdmin extends Component {
       });
   };
 
-  onSaveDataClick = () => {
-    const { formData } = this.state;
-
+  const onSaveDataClick = () => {
     if (!formData.title || !formData.image || !formData.synopsys || !formData.sutradara ||
         !formData.genre || !formData.durasi || !formData.produksi || !formData.trailer ||
         !formData.studioId || formData.jadwal.length === 0) {
@@ -228,8 +204,8 @@ class ManageAdmin extends Component {
 
     Axios.post(`${APIURL}movies`, newData)
       .then(() => {
-        this.fetchData();
-        this.handleCloseAddModal();
+        fetchData();
+        handleCloseAddModal();
         Myswal.fire("Success!", "New movie added successfully.", "success");
       })
       .catch(err => {
@@ -238,7 +214,7 @@ class ManageAdmin extends Component {
       });
   };
 
-  deleteMovie = (id, title) => {
+  const deleteMovie = (id, title) => {
     Myswal.fire({
       title: `Delete ${title}?`,
       text: "You won't be able to revert this!",
@@ -251,7 +227,7 @@ class ManageAdmin extends Component {
       if (result.value) {
         Axios.delete(`${APIURL}movies/${id}`)
           .then(() => {
-            this.fetchData(); // Refresh data
+            fetchData(); // Refresh data
             Myswal.fire("Deleted!", `${title} has been deleted.`, "success");
           })
           .catch(err => {
@@ -266,8 +242,8 @@ class ManageAdmin extends Component {
     });
   };
 
-  renderMovieCards = () => {
-    return this.state.dataFilm.map((movie, index) => (
+  const renderMovieCards = () => {
+    return dataFilm.map((movie, index) => (
       <div key={movie.id} className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
         <div className="p-6">
           <div className="flex items-start space-x-4 mb-4">
@@ -316,11 +292,11 @@ class ManageAdmin extends Component {
               <div className="mt-3">
                 <p className="text-sm text-gray-700">
                   {movie.synopsys.length <= 100 ? movie.synopsys :
-                    this.state.readmoreselected === index ? (
+                    readmoreselected === index ? (
                       <>
                         {movie.synopsys}
                         <button
-                          onClick={() => this.setState({ readmoreselected: -1 })}
+                          onClick={() => setReadmoreselected(-1)}
                           className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Read less
@@ -330,7 +306,7 @@ class ManageAdmin extends Component {
                       <>
                         {movie.synopsys.substring(0, 100)}...
                         <button
-                          onClick={() => this.setState({ readmoreselected: index })}
+                          onClick={() => setReadmoreselected(index)}
                           className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Read more
@@ -358,7 +334,7 @@ class ManageAdmin extends Component {
           {/* Action Buttons */}
           <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
             <button
-              onClick={() => this.handleShowViewModal(movie)}
+              onClick={() => handleShowViewModal(movie)}
               className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
               title="View Details"
             >
@@ -366,14 +342,14 @@ class ManageAdmin extends Component {
               View
             </button>
             <button
-              onClick={() => this.handleShowEditModal(index)}
+              onClick={() => handleShowEditModal(index)}
               className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               <FaEdit className="mr-1" />
               Edit
             </button>
             <button
-              onClick={() => this.deleteMovie(movie.id, movie.title)}
+              onClick={() => deleteMovie(movie.id, movie.title)}
               className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
             >
               <FaTrash className="mr-1" />
@@ -385,9 +361,8 @@ class ManageAdmin extends Component {
     ));
   };
 
-  renderScheduleCheckboxes = () => {
-    const { formData } = this.state;
-    const scheduleTemplate = this.state.jadwal;
+  const renderScheduleCheckboxes = () => {
+    const scheduleTemplate = jadwal;
 
     return (
       <div className="grid grid-cols-3 gap-3">
@@ -396,7 +371,7 @@ class ManageAdmin extends Component {
             <input
               type="checkbox"
               checked={formData.jadwal.includes(time)}
-              onChange={(e) => this.handleScheduleChange(time, e.target.checked)}
+              onChange={(e) => handleScheduleChange(time, e.target.checked)}
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
             />
             <span className="text-sm font-medium text-gray-700">{time}:00</span>
@@ -407,9 +382,7 @@ class ManageAdmin extends Component {
   };
 
 
-  renderModal = (type) => {
-    const { modaladd, modaledit, modalview, formData, viewMovie, datastudio } = this.state;
-
+  const renderModal = (type) => {
     if (type === 'view' && modalview && viewMovie) {
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -417,7 +390,7 @@ class ManageAdmin extends Component {
             <div className="bg-blue-600 text-white p-6 rounded-t-lg">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Movie Details</h3>
-                <button onClick={this.handleCloseViewModal} className="text-white hover:text-gray-200">
+                <button onClick={handleCloseViewModal} className="text-white hover:text-gray-200">
                   <FaTimes className="text-xl" />
                 </button>
               </div>
@@ -454,7 +427,7 @@ class ManageAdmin extends Component {
                 <p className="mt-2 text-gray-700">{viewMovie.synopsys}</p>
               </div>
               <button
-                onClick={this.handleCloseViewModal}
+                onClick={handleCloseViewModal}
                 className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Close
@@ -479,7 +452,7 @@ class ManageAdmin extends Component {
                 {isEdit ? 'Edit Movie' : 'Add New Movie'}
               </h3>
               <button
-                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                onClick={isEdit ? handleCloseEditModal : handleCloseAddModal}
                 className="text-white hover:text-gray-200"
               >
                 <FaTimes className="text-xl" />
@@ -493,7 +466,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => this.handleInputChange('title', e.target.value)}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter movie title"
                 />
@@ -503,7 +476,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.image}
-                  onChange={(e) => this.handleInputChange('image', e.target.value)}
+                  onChange={(e) => handleInputChange('image', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter image URL"
                 />
@@ -512,7 +485,7 @@ class ManageAdmin extends Component {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Synopsis</label>
                 <textarea
                   value={formData.synopsys}
-                  onChange={(e) => this.handleInputChange('synopsys', e.target.value)}
+                  onChange={(e) => handleInputChange('synopsys', e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter movie synopsis"
@@ -523,7 +496,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.sutradara}
-                  onChange={(e) => this.handleInputChange('sutradara', e.target.value)}
+                  onChange={(e) => handleInputChange('sutradara', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter director name"
                 />
@@ -533,7 +506,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.genre}
-                  onChange={(e) => this.handleInputChange('genre', e.target.value)}
+                  onChange={(e) => handleInputChange('genre', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter movie genre"
                 />
@@ -543,7 +516,7 @@ class ManageAdmin extends Component {
                 <input
                   type="number"
                   value={formData.durasi}
-                  onChange={(e) => this.handleInputChange('durasi', e.target.value)}
+                  onChange={(e) => handleInputChange('durasi', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter duration"
                   min="1"
@@ -554,7 +527,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.produksi}
-                  onChange={(e) => this.handleInputChange('produksi', e.target.value)}
+                  onChange={(e) => handleInputChange('produksi', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter production company"
                 />
@@ -564,7 +537,7 @@ class ManageAdmin extends Component {
                 <input
                   type="text"
                   value={formData.trailer}
-                  onChange={(e) => this.handleInputChange('trailer', e.target.value)}
+                  onChange={(e) => handleInputChange('trailer', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter trailer URL"
                 />
@@ -573,7 +546,7 @@ class ManageAdmin extends Component {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Studio</label>
                 <select
                   value={formData.studioId}
-                  onChange={(e) => this.handleInputChange('studioId', e.target.value)}
+                  onChange={(e) => handleInputChange('studioId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Studio</option>
@@ -584,18 +557,18 @@ class ManageAdmin extends Component {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
-                {this.renderScheduleCheckboxes()}
+                {renderScheduleCheckboxes()}
               </div>
             </div>
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={isEdit ? this.handleCloseEditModal : this.handleCloseAddModal}
+                onClick={isEdit ? handleCloseEditModal : handleCloseAddModal}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={isEdit ? this.onUpdateDataClick : this.onSaveDataClick}
+                onClick={isEdit ? onUpdateDataClick : onSaveDataClick}
                 className={`flex-1 ${isEdit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white py-2 px-4 rounded-lg transition-colors`}
               >
                 {isEdit ? 'Save Changes' : 'Add Movie'}
@@ -607,12 +580,9 @@ class ManageAdmin extends Component {
     );
   };
 
-  render() {
-    if (this.props.role !== "admin") {
-      return <Navigate to="/" replace />;
-    }
-
-    const { dataFilm, loading } = this.state;
+  if (props.role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 py-8">
@@ -627,7 +597,7 @@ class ManageAdmin extends Component {
               <p className="text-gray-600">Manage cinema movies and showtimes</p>
             </div>
             <button
-              onClick={this.handleShowAddModal}
+              onClick={handleShowAddModal}
               className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               <FaPlus className="mr-2" />
@@ -663,13 +633,13 @@ class ManageAdmin extends Component {
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="text-3xl font-bold text-red-600 mb-2">
-                {this.state.datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0)}
+                {datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0)}
               </div>
               <div className="text-gray-600">Total Seats</div>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6 text-center">
               <div className="text-3xl font-bold text-indigo-600 mb-2">
-                {this.state.datastudio.length > 0 ? Math.round(this.state.datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0) / this.state.datastudio.length) : 0}
+                {datastudio.length > 0 ? Math.round(datastudio.reduce((total, studio) => total + (parseInt(studio.jumlahKursi) || 0), 0) / datastudio.length) : 0}
               </div>
               <div className="text-gray-600">Avg Seats/Studio</div>
             </div>
@@ -696,19 +666,18 @@ class ManageAdmin extends Component {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {this.renderMovieCards()}
+              {renderMovieCards()}
             </div>
           )}
 
           {/* Modals */}
-          {this.renderModal('add')}
-          {this.renderModal('edit')}
-          {this.renderModal('view')}
+          {renderModal('add')}
+          {renderModal('edit')}
+          {renderModal('view')}
         </div>
       </div>
     );
-  }
-}
+};
 
 const MapstateToprops = state => {
   return {
@@ -716,4 +685,4 @@ const MapstateToprops = state => {
   };
 };
 
-export default connect(MapstateToprops)(ManageAdmin);
+export default connect(MapstateToprops)(ManageMovies);

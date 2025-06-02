@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import Axios from "axios";
 import { APIURL } from "../support/ApiUrl";
@@ -7,41 +7,43 @@ import { FaCreditCard, FaClock, FaUser, FaCalendar, FaFilm, FaEye, FaDownload, F
 import Numeral from "numeral";
 import { generateReceiptPDF } from "../utils/pdfGenerator";
 
-class Transactions extends Component {
-  state = {
-    transactions: [],
-    filteredTransactions: [],
-    loading: true,
-    error: null,
-    selectedTransaction: null,
-    showDetailModal: false,
-    filterStatus: 'all', // all, paid, pending
-    searchTerm: '',
-    dateFilter: 'all' // all, today, week, month
-  };
+const Transactions = (props) => {
+  const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all'); // all, paid, pending
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
 
-  componentDidMount() {
-    this.fetchTransactions();
-  }
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
-  fetchTransactions = () => {
-    this.setState({ loading: true });
+  useEffect(() => {
+    applyFilters();
+  }, [transactions, searchTerm, dateFilter, filterStatus]);
+
+  const fetchTransactions = () => {
+    setLoading(true);
 
     // Fetch only paid orders (transactions)
-    Axios.get(`${APIURL}orders?userId=${this.props.UserId}&bayar=true`)
+    Axios.get(`${APIURL}/orders?userId=${props.UserId}&bayar=true`)
       .then(res => {
-        const transactions = res.data;
+        const transactionsData = res.data;
 
         // Fetch movie data and order details for each transaction
-        const promises = transactions.map(transaction => {
-          const moviePromise = Axios.get(`${APIURL}movies/${transaction.movieId}`)
+        const promises = transactionsData.map(transaction => {
+          const moviePromise = Axios.get(`${APIURL}/movies/${transaction.movieId}`)
             .then(movieRes => movieRes.data)
             .catch(err => {
               console.error(`Error fetching movie ${transaction.movieId}:`, err);
               return null; // Return null if movie not found
             });
 
-          const detailsPromise = Axios.get(`${APIURL}ordersDetails?orderId=${transaction.id}`)
+          const detailsPromise = Axios.get(`${APIURL}/ordersDetails?orderId=${transaction.id}`)
             .then(detailRes => detailRes.data)
             .catch(err => {
               console.error(`Error fetching transaction details for ${transaction.id}:`, err);
@@ -61,37 +63,30 @@ class Transactions extends Component {
             const sortedTransactions = transactionsWithDetails.sort((a, b) =>
               new Date(b.orderDate || b.id) - new Date(a.orderDate || a.id)
             );
-            this.setState({
-              transactions: sortedTransactions,
-              filteredTransactions: sortedTransactions,
-              loading: false
-            });
+            setTransactions(sortedTransactions);
+            setFilteredTransactions(sortedTransactions);
+            setLoading(false);
           })
           .catch(err => {
             console.error('Error processing transactions:', err);
-            this.setState({
-              transactions: transactions,
-              filteredTransactions: transactions,
-              loading: false
-            });
+            setTransactions(transactionsData);
+            setFilteredTransactions(transactionsData);
+            setLoading(false);
           });
       })
       .catch(err => {
         console.error('Error fetching transactions:', err);
-        this.setState({
-          error: 'Failed to load transactions',
-          loading: false
-        });
+        setError('Failed to load transactions');
+        setLoading(false);
       });
   };
 
-  applyFilters = () => {
-    const { transactions, filterStatus, searchTerm, dateFilter } = this.state;
+  const applyFilters = () => {
     let filtered = [...transactions];
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(transaction => 
+      filtered = filtered.filter(transaction =>
         (transaction.movie?.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (transaction.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         transaction.id.toString().includes(searchTerm)
@@ -102,10 +97,10 @@ class Transactions extends Component {
     if (dateFilter !== 'all') {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       filtered = filtered.filter(transaction => {
         const transactionDate = new Date(transaction.orderDate || transaction.id);
-        
+
         switch (dateFilter) {
           case 'today':
             return transactionDate >= today;
@@ -121,42 +116,42 @@ class Transactions extends Component {
       });
     }
 
-    this.setState({ filteredTransactions: filtered });
+    setFilteredTransactions(filtered);
   };
 
-  handleSearchChange = (e) => {
-    this.setState({ searchTerm: e.target.value }, this.applyFilters);
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
   };
 
-  handleFilterChange = (filterType, value) => {
-    this.setState({ [filterType]: value }, this.applyFilters);
+  const handleFilterChange = (filterType, value) => {
+    if (filterType === 'dateFilter') {
+      setDateFilter(value);
+    } else if (filterType === 'filterStatus') {
+      setFilterStatus(value);
+    }
   };
 
-  showTransactionDetail = (transaction) => {
-    this.setState({ 
-      selectedTransaction: transaction,
-      showDetailModal: true 
-    });
+  const showTransactionDetail = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowDetailModal(true);
   };
 
-  closeDetailModal = () => {
-    this.setState({
-      selectedTransaction: null,
-      showDetailModal: false
-    });
+  const closeDetailModal = () => {
+    setSelectedTransaction(null);
+    setShowDetailModal(false);
   };
 
-  downloadReceipt = async (transaction) => {
+  const downloadReceipt = async (transaction) => {
     try {
       await generateReceiptPDF(transaction);
     } catch (error) {
       console.error('Error generating PDF receipt:', error);
       // Fallback to text download if PDF generation fails
-      this.downloadTextReceipt(transaction);
+      downloadTextReceipt(transaction);
     }
   };
 
-  downloadTextReceipt = (transaction) => {
+  const downloadTextReceipt = (transaction) => {
     const movie = transaction.movie || {};
     const orderDetails = transaction.orderDetails || [];
     const seats = orderDetails.map(seat =>
@@ -223,18 +218,18 @@ Contact: info@bioskopsandra.com
     window.URL.revokeObjectURL(url);
   };
 
-  getPaymentMethodBadge = (method) => {
+  const getPaymentMethodBadge = (method) => {
     const colors = {
       credit_card: 'bg-blue-100 text-blue-800',
       bank_transfer: 'bg-green-100 text-green-800',
       default: 'bg-gray-100 text-gray-800'
     };
-    
+
     const color = colors[method] || colors.default;
-    const displayName = method === 'credit_card' ? 'Credit Card' : 
-                      method === 'bank_transfer' ? 'Bank Transfer' : 
+    const displayName = method === 'credit_card' ? 'Credit Card' :
+                      method === 'bank_transfer' ? 'Bank Transfer' :
                       method || 'Unknown';
-    
+
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${color}`}>
         <FaCreditCard className="mr-1" />
@@ -243,24 +238,24 @@ Contact: info@bioskopsandra.com
     );
   };
 
-  calculateTotalRevenue = () => {
-    return this.state.filteredTransactions.reduce((total, transaction) => 
+  const calculateTotalRevenue = () => {
+    return filteredTransactions.reduce((total, transaction) =>
       total + (transaction.totalharga || transaction.totalHarga || 0), 0
     );
   };
 
-  renderTransactionCard = (transaction) => {
+  const renderTransactionCard = (transaction) => {
     const movie = transaction.movie || {};
     const seatCount = transaction.orderDetails ? transaction.orderDetails.length : 0;
-    
+
     return (
       <div key={transaction.id} className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
               {movie.image && (
-                <img 
-                  src={movie.image} 
+                <img
+                  src={movie.image}
                   alt={movie.title}
                   className="w-16 h-24 object-cover rounded-md"
                 />
@@ -287,7 +282,7 @@ Contact: info@bioskopsandra.com
             </div>
             <div className="text-right">
               <div className="mb-2">
-                {this.getPaymentMethodBadge(transaction.paymentMethod)}
+                {getPaymentMethodBadge(transaction.paymentMethod)}
               </div>
               <div className="text-lg font-bold text-green-600">
                 {Numeral(transaction.totalharga || transaction.totalHarga || 0).format("Rp0,0")}
@@ -297,14 +292,14 @@ Contact: info@bioskopsandra.com
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-500">
               {transaction.orderDate ? new Date(transaction.orderDate).toLocaleString() : 'Date not available'}
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => this.downloadReceipt(transaction)}
+                onClick={() => downloadReceipt(transaction)}
                 className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                 title="Download PDF Receipt"
               >
@@ -312,7 +307,7 @@ Contact: info@bioskopsandra.com
                 PDF
               </button>
               <button
-                onClick={() => this.showTransactionDetail(transaction)}
+                onClick={() => showTransactionDetail(transaction)}
                 className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 <FaEye className="mr-1" />
@@ -325,8 +320,7 @@ Contact: info@bioskopsandra.com
     );
   };
 
-  renderDetailModal = () => {
-    const { selectedTransaction, showDetailModal } = this.state;
+  const renderDetailModal = () => {
     if (!showDetailModal || !selectedTransaction) return null;
 
     const movie = selectedTransaction.movie || {};
@@ -339,7 +333,7 @@ Contact: info@bioskopsandra.com
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-semibold">Transaction Details</h3>
               <button
-                onClick={this.closeDetailModal}
+                onClick={closeDetailModal}
                 className="text-white hover:text-gray-200 text-xl"
               >
                 <FaTimes />
@@ -395,7 +389,7 @@ Contact: info@bioskopsandra.com
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Method:</span>
-                    {this.getPaymentMethodBadge(selectedTransaction.paymentMethod)}
+                    {getPaymentMethodBadge(selectedTransaction.paymentMethod)}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Transaction Date:</span>
@@ -450,13 +444,13 @@ Contact: info@bioskopsandra.com
             {/* Actions */}
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={this.closeDetailModal}
+                onClick={closeDetailModal}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Close
               </button>
               <button
-                onClick={() => this.downloadReceipt(selectedTransaction)}
+                onClick={() => downloadReceipt(selectedTransaction)}
                 className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <FaFilePdf className="inline mr-2" />
@@ -469,13 +463,11 @@ Contact: info@bioskopsandra.com
     );
   };
 
-  render() {
-    if (!this.props.AuthLog) {
-      return <Navigate to="/login" replace />;
-    }
+  if (!props.AuthLog) {
+    return <Navigate to="/login" replace />;
+  }
 
-    const { filteredTransactions, loading, error, searchTerm, dateFilter } = this.state;
-    const totalRevenue = this.calculateTotalRevenue();
+  const totalRevenue = calculateTotalRevenue();
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100 py-8">
@@ -522,7 +514,7 @@ Contact: info@bioskopsandra.com
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={this.handleSearchChange}
+                  onChange={handleSearchChange}
                   placeholder="Search by movie, customer, or transaction ID..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
@@ -534,7 +526,7 @@ Contact: info@bioskopsandra.com
                 </label>
                 <select
                   value={dateFilter}
-                  onChange={(e) => this.handleFilterChange('dateFilter', e.target.value)}
+                  onChange={(e) => handleFilterChange('dateFilter', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="all">All Time</option>
@@ -573,17 +565,16 @@ Contact: info@bioskopsandra.com
             </div>
           ) : (
             <div className="space-y-6">
-              {filteredTransactions.map(transaction => this.renderTransactionCard(transaction))}
+              {filteredTransactions.map(transaction => renderTransactionCard(transaction))}
             </div>
           )}
 
           {/* Detail Modal */}
-          {this.renderDetailModal()}
+          {renderDetailModal()}
         </div>
       </div>
     );
-  }
-}
+};
 
 const mapStateToProps = state => ({
   AuthLog: state.Auth.login,
