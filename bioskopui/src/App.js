@@ -2,16 +2,16 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { connect } from "react-redux";
 import Axios from "axios";
-import Header from "./components/header";
+import Header from "./components/Header";
 import Footer from "./components/Footer";
 import "./App.css";
 import Home from "./pages/Home";
 import ManageMovies from "./pages/ManageMovies";
 import Login from "./pages/Login";
 import { APIURL } from "./support/ApiUrl";
-import Slider from "./components/slider";
+import Slider from "./components/Slider";
 import RegisterUser from "./pages/RegisterUser";
-import WelcomePages from "./components/welcomePages";
+import WelcomePages from "./components/WelcomePages";
 import MovieDetail from "./pages/MovieDetail";
 import BuyTicket from "./pages/BuyTicket";
 import { LoginSuccessAction, NotifCart } from "./redux/actions";
@@ -28,11 +28,11 @@ const App = (props) => {
 
   useEffect(() => {
     const id = localStorage.getItem("fakhran");
-    Axios.get(`${APIURL}users/${id}`)
+    Axios.get(`${APIURL}/users/${id}`)
       .then(res => {
         // console.log(res.data);
         props.LoginSuccessAction(res.data);
-        Axios.get(`${APIURL}orders?_expand=movie&userId=${props.userId}&bayar=false`)
+        Axios.get(`${APIURL}/orders?_expand=movie&userId=${props.userId}&bayar=false`)
           .then(res1 => {
             const datacart = res1.data;
             setDatacart(datacart);
@@ -71,21 +71,21 @@ const App = (props) => {
             <Footer />
           </>
         } />
-        <Route path="/manageAdmin" element={
+        <Route path="/manage-movies" element={
           <>
             <Header />
             <ManageMovies />
             <Footer />
           </>
         } />
-        <Route path="/moviedetail/:id" element={
+        <Route path="/movie-detail/:id" element={
           <>
             <Header />
             <MovieDetail />
             <Footer />
           </>
         } />
-        <Route path="/belitiket" element={
+        <Route path="/buy-ticket" element={
           <>
             <Header />
             <BuyTicket />
@@ -99,7 +99,7 @@ const App = (props) => {
             <Footer />
           </>
         } />
-        <Route path="/RegisterUser" element={
+        <Route path="/register" element={
           <>
             <Header />
             <RegisterUser />
@@ -127,14 +127,14 @@ const App = (props) => {
             <Footer />
           </>
         } />
-        <Route path="/gantipassword" element={
+        <Route path="/change-password" element={
           <>
             <Header />
             <ChangePassword />
             <Footer />
           </>
         } />
-        <Route path="/manageStudio" element={
+        <Route path="/manage-studios" element={
           <>
             <Header />
             <ManageStudios />

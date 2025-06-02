@@ -80,7 +80,7 @@ const Home = () => {
                 {isReadMore ? "Show Less" : "Read More"}
               </button>
               <Link
-                to={`/moviedetail/${movie.id}`}
+                to={`/movie-detail/${movie.id}`}
                 className="bg-gradient-to-r from-yellow-400 to-orange-400 text-blue-900 py-2 px-4 rounded-lg hover:from-yellow-300 hover:to-orange-300 transition-all duration-200 text-sm font-medium"
               >
                 View Details

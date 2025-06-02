@@ -30,20 +30,20 @@ const Transactions = (props) => {
     setLoading(true);
 
     // Fetch only paid orders (transactions)
-    Axios.get(`${APIURL}orders?userId=${props.UserId}&bayar=true`)
+    Axios.get(`${APIURL}/orders?userId=${props.UserId}&bayar=true`)
       .then(res => {
         const transactionsData = res.data;
 
         // Fetch movie data and order details for each transaction
         const promises = transactionsData.map(transaction => {
-          const moviePromise = Axios.get(`${APIURL}movies/${transaction.movieId}`)
+          const moviePromise = Axios.get(`${APIURL}/movies/${transaction.movieId}`)
             .then(movieRes => movieRes.data)
             .catch(err => {
               console.error(`Error fetching movie ${transaction.movieId}:`, err);
               return null; // Return null if movie not found
             });
 
-          const detailsPromise = Axios.get(`${APIURL}ordersDetails?orderId=${transaction.id}`)
+          const detailsPromise = Axios.get(`${APIURL}/ordersDetails?orderId=${transaction.id}`)
             .then(detailRes => detailRes.data)
             .catch(err => {
               console.error(`Error fetching transaction details for ${transaction.id}:`, err);
@@ -514,7 +514,7 @@ Contact: info@bioskopsandra.com
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={this.handleSearchChange}
+                  onChange={handleSearchChange}
                   placeholder="Search by movie, customer, or transaction ID..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
@@ -526,7 +526,7 @@ Contact: info@bioskopsandra.com
                 </label>
                 <select
                   value={dateFilter}
-                  onChange={(e) => this.handleFilterChange('dateFilter', e.target.value)}
+                  onChange={(e) => handleFilterChange('dateFilter', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="all">All Time</option>

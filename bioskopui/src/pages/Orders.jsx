@@ -21,20 +21,20 @@ const Orders = (props) => {
   const fetchOrders = () => {
     setLoading(true);
 
-    Axios.get(`${APIURL}orders?userId=${props.UserId}`)
+    Axios.get(`${APIURL}/orders?userId=${props.UserId}`)
       .then(res => {
         const ordersData = res.data;
 
         // Fetch movie data and order details for each order
         const promises = ordersData.map(order => {
-          const moviePromise = Axios.get(`${APIURL}movies/${order.movieId}`)
+          const moviePromise = Axios.get(`${APIURL}/movies/${order.movieId}`)
             .then(movieRes => movieRes.data)
             .catch(err => {
               console.error(`Error fetching movie ${order.movieId}:`, err);
               return null; // Return null if movie not found
             });
 
-          const detailsPromise = Axios.get(`${APIURL}ordersDetails?orderId=${order.id}`)
+          const detailsPromise = Axios.get(`${APIURL}/ordersDetails?orderId=${order.id}`)
             .then(detailRes => detailRes.data)
             .catch(err => {
               console.error(`Error fetching order details for ${order.id}:`, err);
